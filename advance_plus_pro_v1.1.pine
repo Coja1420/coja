@@ -1,0 +1,594 @@
+// file: advance_plus_pro_merged_from_code2_notepad_panel_under_title_PADDED.pine
+//@version=5
+indicator(title="Advance+ Pro (Merged: Code2 Logic, Code1 Visuals/Alerts)", shorttitle="Advance+ Pro", overlay=true)
+
+// ————— Inputs
+var string groupBias = "Bias & LTF"
+TF_4H           = input.timeframe("240", "HTF #1 (4H)", group=groupBias)
+TF_1H           = input.timeframe("60",  "HTF #2 (1H)", group=groupBias)
+LB_STR          = input.int(20, "BOS Window (bars)", minval=5, group=groupBias)
+LTF_5m          = input.timeframe("5",  "Aligned LTF", group=groupBias)
+LTF_15m         = input.timeframe("15", "Opposite LTF", group=groupBias)
+BOS_Uses_Close  = input.bool(true, "LTF BOS requires body close", group=groupBias)
+
+var string groupSess = "Sessions"
+const string LOCAL_TZ = "Europe/Belgrade"
+Sess_LO           = input.session("0900-1330", "London (09:00–13:30)", group=groupSess)
+Sess_NY           = input.session("1400-1730", "New York (14:00–17:30)", group=groupSess)
+Session_Detect_TF = input.timeframe("5", "Session engine timeframe (internal)", group=groupSess)
+Show_LO_HL        = input.bool(true,  "Show London HL", group=groupSess)
+Show_NY_HL        = input.bool(true,  "Show New York HL", group=groupSess)
+
+var string groupMode = "Signal Mode"
+Signal_Mode              = input.string("Balanced", "Mode", options=["Strict","Balanced","Aggressive"], group=groupMode)
+Max_Signals_Per_Session  = input.int(3, "Max signals per session", minval=0, maxval=20, group=groupMode)
+Min_Bars_Between_SignALS = input.int(4, "Min bars between signals (chart TF bars)", minval=0, maxval=100, group=groupMode)
+
+var string groupScore = "Scoring"
+W_Bias      = input.float(2.0, "Weight: Bias",    minval=0, step=0.1, group=groupScore)
+W_BOS       = input.float(1.5, "Weight: LTF BOS", minval=0, step=0.1, group=groupScore)
+W_Sweep     = input.float(1.0, "Weight: Sweep",   minval=0, step=0.1, group=groupScore)
+W_POI       = input.float(0.7, "Weight: per POI (OB/BRK/FVG/EQ64)", minval=0, step=0.1, group=groupScore)
+W_NearHL    = input.float(0.5, "Weight: Near HL/PD", minval=0, step=0.1, group=groupScore)
+W_Momentum  = input.float(0.5, "Weight: Momentum bar", minval=0, step=0.1, group=groupScore)
+Score_Strict     = input.float(4.0, "Score threshold: Strict",     minval=0, step=0.1, group=groupScore)
+Score_Balanced   = input.float(2.5, "Score threshold: Balanced",   minval=0, step=0.1, group=groupScore)
+Score_Aggressive = input.float(1.6, "Score threshold: Aggressive", minval=0, step=0.1, group=groupScore)
+
+var string groupPlan = "Plan (logic only)"
+Entry_Type        = input.string("StopBeyondBar", "Entry Type", options=["MarketClose","StopBeyondBar"], group=groupPlan)
+Entry_Buffer_Tks  = input.int(1, "Entry buffer (×mintick)", minval=0, maxval=10, group=groupPlan)
+Use_EQ50          = input.bool(true,  "Use EQ 50% (logic)", group=groupPlan)
+Use_64            = input.bool(true,  "Use 64% (logic)",    group=groupPlan)
+Use_79            = input.bool(false, "Use 79% (logic)",    group=groupPlan)
+TP1_R             = input.float(1.5,  "TP1 (R)", minval=0.5, step=0.1, group=groupPlan)
+TP2_R             = input.float(3.0,  "TP2 (R)", minval=1.0, step=0.1, group=groupPlan)
+
+var string groupNews = "News Filter"
+Avoid_News = input.bool(true, "Block signals inside news windows", group=groupNews)
+News1_From = input.time(timestamp("01 Jan 2024 00:00 +0000"), "News1 from", group=groupNews)
+News1_To   = input.time(timestamp("01 Jan 2024 00:00 +0000"), "News1 to",   group=groupNews)
+News2_From = input.time(timestamp("01 Jan 2024 00:00 +0000"), "News2 from", group=groupNews)
+News2_To   = input.time(timestamp("01 Jan 2024 00:00 +0000"), "News2 to",   group=groupNews)
+
+var string groupColors = "Colors"
+Color_LO   = input.color(color.teal,   "London HL", group=groupColors)
+Color_NY   = input.color(color.orange, "New York HL", group=groupColors)
+Color_Prev = input.color(color.gray,   "PDH/PDL", group=groupColors)
+Color_EQ   = input.color(color.new(color.blue,    0), "EQ50", group=groupColors)
+Color_64C  = input.color(color.new(color.fuchsia, 0), "64%",  group=groupColors)
+Color_79   = input.color(color.new(color.red,     0), "79%",  group=groupColors)
+
+colSweepPOI  = color.new(color.purple, 0)
+colPOIFill   = color.new(color.purple, 85)
+colBOS       = color.new(color.blue,   0)
+colMomentum  = color.new(color.gray,  10)
+colScoreText = color.black
+colLightning = color.new(color.yellow, 0)
+
+// ————— Helpers
+f_session_state_ltf(string sess, string tz, string tf) =>
+    bool in_ltf    = not na(time(tf, sess, tz))
+    bool start_ltf = not in_ltf[1] and in_ltf
+    bool end_ltf   = in_ltf[1] and not in_ltf
+    bool inS    = request.security(syminfo.tickerid, tf, in_ltf,    lookahead=barmerge.lookahead_off)
+    bool startS = request.security(syminfo.tickerid, tf, start_ltf, lookahead=barmerge.lookahead_off)
+    bool endS   = request.security(syminfo.tickerid, tf, end_ltf,   lookahead=barmerge.lookahead_off)
+    [inS, startS, endS]
+
+f_bos_flags(srcClose, srcHigh, srcLow, lb) =>
+    float hh = ta.highest(srcHigh, lb)
+    float ll = ta.lowest(srcLow,  lb)
+    [srcClose > hh[1], srcClose < ll[1]]
+
+f_choose_ltf(tf4Up, tf4Dn, tf1Up, tf1Dn) => (tf4Up and tf1Up) or (tf4Dn and tf1Dn)
+
+f_pad2(int n) =>
+    n < 10 ? "0" + str.tostring(n) : str.tostring(n)
+
+f_pre15_session(string sess) =>
+    string sFrom = str.substring(sess, 0, 4)
+    float hhF = str.tonumber(str.substring(sess, 0, 2))
+    float mmF = str.tonumber(str.substring(sess, 2, 4))
+    int hh = int(hhF)
+    int mm = int(mmF)
+    int total = hh * 60 + mm
+    int pre  = (total - 15 + 1440) % 1440
+    int ph   = int(math.floor(pre / 60.0))
+    int pm   = pre % 60
+    string preFrom = f_pad2(ph) + f_pad2(pm)
+    string preTo   = sFrom
+    preFrom + "-" + preTo
+
+f_find_fvg_up(h, l) =>
+    bool cond = h[2] < l
+    float top = cond ? l    : na
+    float bot = cond ? h[2] : na
+    [cond, top, bot]
+
+f_find_fvg_dn(h, l) =>
+    bool cond = l[2] > h
+    float top = cond ? l[2] : na
+    float bot = cond ? l   : na
+    [cond, top, bot]
+
+f_ob_breaker(bool isBull, float o, float h, float l, float c) =>
+    bool bosNow = isBull ? (c > ta.highest(h, 1)[1]) : (c < ta.lowest(l, 1)[1])
+    float _obh = na
+    float _obl = na
+    float _brkh = na
+    float _brkl = na
+    if bosNow
+        bool found = false
+        for i = 1 to 10
+            bool opp = isBull ? (c[i] < o[i]) : (c[i] > o[i])
+            if opp and not found
+                found := true
+                _obh := h[i]
+                _obl := l[i]
+        if not na(_obh) and not na(_obl)  // fixed
+            bool engulf = isBull ? (c > _obh) : (c < _obl)
+            if engulf
+                _brkh := _obh
+                _brkl := _obl
+    [_obh, _obl, _brkh, _brkl]
+
+f_eq_levels(isBull, swingLo, swingHi, cls) =>
+    float eq   = na
+    float lv64 = na
+    float lv79 = na
+    if not na(swingLo) and not na(swingHi) and swingHi > swingLo
+        eq   := (swingHi + swingLo) / 2.0
+        lv64 := isBull ? (swingLo + 0.64 * (swingHi - swingLo)) : (swingHi - 0.64 * (swingHi - swingLo))
+        lv79 := isBull ? (swingLo + 0.79 * (swingHi - swingLo)) : (swingHi - 0.79 * (swingHi - swingLo))
+    bool pass64 = not na(lv64) and (isBull ? (cls > lv64) : (cls < lv64))
+    bool pass79 = not na(lv79) and (isBull ? (cls > lv79) : (cls < lv79))
+    [eq, lv64, lv79, pass64, pass79]
+
+// ————— HTF/LTF
+[tf4_up, tf4_dn] = request.security(syminfo.tickerid, TF_4H, f_bos_flags(close, high, low, LB_STR), lookahead=barmerge.lookahead_off)
+[tf1_up, tf1_dn] = request.security(syminfo.tickerid, TF_1H, f_bos_flags(close, high, low, LB_STR), lookahead=barmerge.lookahead_off)
+
+bool biasBull = tf4_up and not tf4_dn and tf1_up
+bool biasBear = tf4_dn and not tf4_up and tf1_dn
+string biasTxt = biasBull ? "UP" : biasBear ? "DOWN" : "MIX"
+
+bool use5m = f_choose_ltf(tf4_up, tf4_dn, tf1_up, tf1_dn)
+float o5  = request.security(syminfo.tickerid, LTF_5m, open,  lookahead=barmerge.lookahead_off)
+float h5  = request.security(syminfo.tickerid, LTF_5m, high,  lookahead=barmerge.lookahead_off)
+float l5  = request.security(syminfo.tickerid, LTF_5m, low,   lookahead=barmerge.lookahead_off)
+float c5  = request.security(syminfo.tickerid, LTF_5m, close, lookahead=barmerge.lookahead_off)
+float o15 = request.security(syminfo.tickerid, LTF_15m, open,  lookahead=barmerge.lookahead_off)
+float h15 = request.security(syminfo.tickerid, LTF_15m, high,  lookahead=barmerge.lookahead_off)
+float l15 = request.security(syminfo.tickerid, LTF_15m, low,   lookahead=barmerge.lookahead_off)
+float c15 = request.security(syminfo.tickerid, LTF_15m, close, lookahead=barmerge.lookahead_off)
+float ltfO = use5m ? o5 : o15
+float ltfH = use5m ? h5 : h15
+float ltfL = use5m ? l5 : l15
+float ltfC = use5m ? c5 : c15
+
+float pvL = ta.pivotlow(ltfL, 3, 3)
+float pvH = ta.pivothigh(ltfH, 3, 3)
+var float lastPvL = na
+var float lastPvH = na
+if not na(pvL)
+    lastPvL := pvL
+if not na(pvH)
+    lastPvH := pvH
+bool bosUp_LTF   = not na(lastPvH) and (BOS_Uses_Close ? (ltfC > lastPvH) : (ltfH > lastPvH))
+bool bosDown_LTF = not na(lastPvL) and (BOS_Uses_Close ? (ltfC < lastPvL) : (ltfL < lastPvL))
+
+// ————— Sessions
+[inLO, sLO, eLO] = f_session_state_ltf(Sess_LO, LOCAL_TZ, Session_Detect_TF)
+[inNY, sNY, eNY] = f_session_state_ltf(Sess_NY, LOCAL_TZ, Session_Detect_TF)
+bool newDay = ta.change(time("D")) != 0
+
+string Pre_LO = f_pre15_session(Sess_LO)
+string Pre_NY = f_pre15_session(Sess_NY)
+[_inPreLO, preLO_start, _preLO_end] = f_session_state_ltf(Pre_LO, LOCAL_TZ, Session_Detect_TF)
+[_inPreNY, preNY_start, _preNY_end] = f_session_state_ltf(Pre_NY, LOCAL_TZ, Session_Detect_TF)
+
+var int loSignalsToday = 0
+var int nySignalsToday = 0
+if newDay
+    loSignalsToday := 0
+    nySignalsToday := 0
+
+// HL values (logic), lines shown only if toggled
+var float loHigh = na
+var float loLow  = na
+var float nyHigh = na
+var float nyLow  = na
+
+var line lnLO_H = na
+var line lnLO_L = na
+var line lnNY_H = na
+var line lnNY_L = na
+
+if sLO
+    loHigh := high
+    loLow  := low
+    if Show_LO_HL
+        if not na(lnLO_H)
+            line.delete(lnLO_H)
+        if not na(lnLO_L)
+            line.delete(lnLO_L)
+        lnLO_H := line.new(bar_index, loHigh, bar_index+1, loHigh, extend=extend.right, color=Color_LO, width=1, style=line.style_dotted)
+        lnLO_L := line.new(bar_index, loLow,  bar_index+1, loLow,  extend=extend.right, color=Color_LO, width=1, style=line.style_dotted)
+
+if inLO
+    loHigh := na(loHigh) or high > loHigh ? high : loHigh
+    loLow  := na(loLow)  or low  < loLow  ? low  : loLow
+    if Show_LO_HL
+        if not na(lnLO_H)
+            line.set_y1(lnLO_H, loHigh), line.set_y2(lnLO_H, loHigh)
+        if not na(lnLO_L)
+            line.set_y1(lnLO_L, loLow),  line.set_y2(lnLO_L, loLow)
+
+if sNY
+    nyHigh := high
+    nyLow  := low
+    if Show_NY_HL
+        if not na(lnNY_H)
+            line.delete(lnNY_H)
+        if not na(lnNY_L)
+            line.delete(lnNY_L)
+        lnNY_H := line.new(bar_index, nyHigh, bar_index+1, nyHigh, extend=extend.right, color=Color_NY, width=1, style=line.style_dotted)
+        lnNY_L := line.new(bar_index, nyLow,  bar_index+1, nyLow,  extend=extend.right, color=Color_NY, width=1, style=line.style_dotted)
+
+if inNY
+    nyHigh := na(nyHigh) or high > nyHigh ? high : nyHigh
+    nyLow  := na(nyLow)  or low  < nyLow  ? low  : nyLow
+    if Show_NY_HL
+        if not na(lnNY_H)
+            line.set_y1(lnNY_H, nyHigh), line.set_y2(lnNY_H, nyHigh)
+        if not na(lnNY_L)
+            line.set_y1(lnNY_L, nyLow),  line.set_y2(lnNY_L, nyLow)
+
+// ————— Daily prev HL
+float pdh = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_off)
+float pdl = request.security(syminfo.tickerid, "D", low[1],  lookahead=barmerge.lookahead_off)
+
+// ————— POIs & EQ
+[_obH_up, _obL_up, _brkH_up, _brkL_up] = f_ob_breaker(true,  ltfO, ltfH, ltfL, ltfC)
+[_obH_dn, _obL_dn, _brkH_dn, _brkL_dn] = f_ob_breaker(false, ltfO, ltfH, ltfL, ltfC)
+[hasFVG_up, fvgTop_up, fvgBot_up]  = f_find_fvg_up(ltfH, ltfL)
+[hasFVG_dn, fvgTop_dn, fvgBot_dn]  = f_find_fvg_dn(ltfH, ltfL)
+[eq_up, lv64_up, lv79_up, pass64_up, pass79_up] = f_eq_levels(true,  lastPvL, lastPvH, ltfC)
+[eq_dn, lv64_dn, lv79_dn, pass64_dn, pass79_dn] = f_eq_levels(false, lastPvL, lastPvH, ltfC)
+
+// ————— Scores
+bool atEQ_up  = Use_EQ50 and not na(eq_up) and math.abs(ltfC - eq_up) <= 2*syminfo.mintick
+bool ok64_up  = Use_64   and pass64_up
+bool ok79_up  = Use_79   and pass79_up
+bool atEQ_dn  = Use_EQ50 and not na(eq_dn) and math.abs(ltfC - eq_dn) <= 2*syminfo.mintick
+bool ok64_dn  = Use_64   and pass64_dn
+bool ok79_dn  = Use_79   and pass79_dn
+
+bool sweptAnyLow  = (Show_LO_HL and not na(loLow)  and low  < loLow)  or (Show_NY_HL and not na(nyLow)  and low  < nyLow)  or (low  < pdl)
+bool sweptAnyHigh = (Show_LO_HL and not na(loHigh) and high > loHigh) or (Show_NY_HL and not na(nyHigh) and high > nyHigh) or (high > pdh)
+
+int poiUp = (not na(_obH_up) ? 1:0) + (not na(_brkH_up) ? 1:0) + (hasFVG_up?1:0) + (atEQ_up?1:0) + (ok64_up?1:0) + (ok79_up?1:0)
+int poiDn = (not na(_obH_dn) ? 1:0) + (not na(_brkH_dn) ? 1:0) + (hasFVG_dn?1:0) + (atEQ_dn?1:0) + (ok64_dn?1:0) + (ok79_dn?1:0)
+
+float scoreUp = 0.0
+scoreUp += (biasBull?1:0) * W_Bias
+scoreUp += (bosUp_LTF?1:0) * W_BOS
+scoreUp += (sweptAnyLow?1:0) * W_Sweep
+scoreUp += poiUp * W_POI
+scoreUp += ((not na(loLow)  and math.abs(close - loLow)  <= 6*syminfo.mintick)
+         or (not na(nyLow)  and math.abs(close - nyLow)  <= 6*syminfo.mintick)
+         or (math.abs(close - pdl) <= 6*syminfo.mintick) ? 1:0) * W_NearHL
+scoreUp += ((close>open and close>close[1])?1:0) * W_Momentum
+
+float scoreDn = 0.0
+scoreDn += (biasBear?1:0) * W_Bias
+scoreDn += (bosDown_LTF?1:0) * W_BOS
+scoreDn += (sweptAnyHigh?1:0) * W_Sweep
+scoreDn += poiDn * W_POI
+scoreDn += ((not na(loHigh) and math.abs(close - loHigh) <= 6*syminfo.mintick)
+         or (not na(nyHigh) and math.abs(close - nyHigh) <= 6*syminfo.mintick)
+         or (math.abs(close - pdh) <= 6*syminfo.mintick) ? 1:0) * W_NearHL
+scoreDn += ((close<open and close<close[1])?1:0) * W_Momentum
+
+float thr = Signal_Mode=="Strict" ? Score_Strict : Signal_Mode=="Balanced" ? Score_Balanced : Score_Aggressive
+
+bool inSess = inLO or inNY
+bool inNews = Avoid_News and ((time>=News1_From and time<=News1_To) or (time>=News2_From and time<=News2_To))
+
+var int lastSignalBar = na
+bool spacedOK = na(lastSignalBar) or (bar_index - lastSignalBar >= Min_Bars_Between_SignALS)
+
+bool quotaOK = true
+if inLO
+    quotaOK := loSignalsToday < Max_Signals_Per_Session
+if inNY
+    quotaOK := nySignalsToday < Max_Signals_Per_Session
+
+bool buyOk  = inSess and not inNews and spacedOK and quotaOK and scoreUp >= thr
+bool sellOk = inSess and not inNews and spacedOK and quotaOK and scoreDn >= thr
+
+if buyOk and sellOk
+    buyOk  := biasBull or (not biasBear)
+    sellOk := biasBear and not buyOk
+
+// ————— Orders (ALIGN WITH CODE 2)
+float slLong  = not na(lastPvL) ? lastPvL - syminfo.mintick : (low  - 2*syminfo.mintick)
+float slShort = not na(lastPvH) ? lastPvH + syminfo.mintick : (high + 2*syminfo.mintick)
+float entryL  = Entry_Type=="MarketClose" ? close : (high + Entry_Buffer_Tks*syminfo.mintick)
+float entryS  = Entry_Type=="MarketClose" ? close : (low  - Entry_Buffer_Tks*syminfo.mintick)
+float rL      = math.max(syminfo.mintick, entryL - slLong)
+float rS      = math.max(syminfo.mintick, slShort - entryS)
+float tp1L    = entryL + TP1_R * rL
+float tp2L    = entryL + TP2_R * rL
+float tp1S    = entryS - TP1_R * rS
+float tp2S    = entryS - TP2_R * rS
+
+var int nextBuyId  = 1
+var int nextSellId = 1
+if newDay
+    nextBuyId  := 1
+    nextSellId := 1
+
+// — storage
+var array<int>   a_id     = array.new_int()
+var array<bool>  a_isBuy  = array.new_bool()
+var array<float> a_entry  = array.new_float()
+var array<float> a_sl     = array.new_float()
+var array<float> a_tp1    = array.new_float()
+var array<float> a_tp2    = array.new_float()
+var array<bool>  a_active = array.new_bool()
+var array<bool>  a_filled = array.new_bool()
+var array<int>   a_sess   = array.new_int()
+
+// Optional label GC
+const int MS_24H = 24 * 60 * 60 * 1000
+var array<label> A_LB = array.new_label()
+var array<int>   A_T  = array.new_int()
+
+// — entries + alerts
+if buyOk
+    int id = nextBuyId
+    nextBuyId += 1
+    bool filled = Entry_Type=="MarketClose"
+    int sessId = inLO ? 1 : inNY ? 2 : 0
+    array.push(a_id, id), array.push(a_isBuy, true)
+    array.push(a_entry, entryL), array.push(a_sl, slLong)
+    array.push(a_tp1, tp1L), array.push(a_tp2, tp2L)
+    array.push(a_active, true), array.push(a_filled, filled)
+    array.push(a_sess, sessId)
+    label lb_buy = label.new(bar_index, low, "BUY"+str.tostring(id), yloc=yloc.belowbar, style=label.style_label_up, textcolor=color.white, color=color.new(color.lime, 0), size=size.normal)
+    array.push(A_LB, lb_buy), array.push(A_T, int(time))
+    lastSignalBar := bar_index
+    if inLO
+        loSignalsToday += 1
+    if inNY
+        nySignalsToday += 1
+    string buyTxt  = "BUY" + str.tostring(id) + " — " + syminfo.ticker + " " + timeframe.period + " | price=" + str.tostring(close, format.mintick)
+    string buyJson = "{ \"content\": \"" + buyTxt + "\" }"
+    alert(buyJson, alert.freq_once_per_bar_close)
+
+if sellOk
+    int id = nextSellId
+    nextSellId += 1
+    bool filled = Entry_Type=="MarketClose"
+    int sessId = inLO ? 1 : inNY ? 2 : 0
+    array.push(a_id, id), array.push(a_isBuy, false)
+    array.push(a_entry, entryS), array.push(a_sl, slShort)
+    array.push(a_tp1, tp1S), array.push(a_tp2, tp2S)
+    array.push(a_active, true), array.push(a_filled, filled)
+    array.push(a_sess, sessId)
+    label lb_sell = label.new(bar_index, high, "SELL"+str.tostring(id), yloc=yloc.abovebar, style=label.style_label_down, textcolor=color.white, color=color.new(color.red, 0), size=size.normal)
+    array.push(A_LB, lb_sell), array.push(A_T, int(time))
+    lastSignalBar := bar_index
+    if inLO
+        loSignalsToday += 1
+    if inNY
+        nySignalsToday += 1
+    string sellTxt  = "SELL" + str.tostring(id) + " — " + syminfo.ticker + " " + timeframe.period + " | price=" + str.tostring(close, format.mintick)
+    string sellJson = "{ \"content\": \"" + sellTxt + "\" }"
+    alert(sellJson, alert.freq_once_per_bar_close)
+
+int last = array.size(a_id) - 1
+
+// === DETECT dominant opposite side (Code2 logic)
+bool sellDominant = (scoreDn >= thr and scoreDn > scoreUp) and (biasBear or bosDown_LTF or close < open)
+bool buyDominant  = (scoreUp >= thr and scoreUp > scoreDn) and (biasBull or bosUp_LTF or close > open)
+
+bool haveActiveBuy  = false
+bool haveActiveSell = false
+if last >= 0
+    for i = last to 0
+        if array.get(a_active, i) and array.get(a_filled, i)
+            if array.get(a_isBuy, i)
+                haveActiveBuy := true
+            else
+                haveActiveSell := true
+
+bool trigExitAllBuys  = false
+bool trigExitAllSells = false
+
+// === (1) Individual SL/TP triggers → consolidate to EXIT ALL per-side
+if last >= 0
+    for i = last to 0
+        if array.get(a_active, i)
+            bool isBuy  = array.get(a_isBuy, i)
+            float en    = array.get(a_entry, i)
+            float sl    = array.get(a_sl,    i)
+            float tp1   = array.get(a_tp1,   i)
+            bool filled = array.get(a_filled, i)
+            if not filled and Entry_Type=="StopBeyondBar"
+                if (isBuy and high >= en) or (not isBuy and low <= en)
+                    array.set(a_filled, i, true)
+                    filled := true
+            if filled
+                if isBuy
+                    if low <= sl or high >= tp1
+                        trigExitAllBuys := true
+                else
+                    if high >= sl or low <= tp1
+                        trigExitAllSells := true
+
+// === (2) Dominant opposite side → EXIT ALL that opposite side
+trigExitAllBuys  := trigExitAllBuys  or (sellDominant and haveActiveBuy)
+trigExitAllSells := trigExitAllSells or (buyDominant  and haveActiveSell)
+
+// ————— Alerts flags
+bool exitAllOk = false  // for alertcondition "EXIT ALL" only
+
+// === Perform EXIT ALL(s) and draw a single label per side + alert JSON
+if trigExitAllBuys and haveActiveBuy
+    float yB = close
+    for i = last to 0
+        if array.get(a_active, i) and array.get(a_filled, i) and array.get(a_isBuy, i)
+            array.set(a_active, i, false)
+    label lb_exitall_b = label.new(bar_index, yB, "EXIT ALL", yloc=yloc.abovebar, style=label.style_label_left, textcolor=color.white, color=color.new(color.lime, 0), size=size.normal)
+    array.push(A_LB, lb_exitall_b), array.push(A_T, int(time))
+    exitAllOk := true
+    string exitAllTxtB  = "EXIT ALL — " + syminfo.ticker + " " + timeframe.period + " | BUY side"
+    string exitAllJsonB = "{ \"content\": \"" + exitAllTxtB + "\" }"
+    alert(exitAllJsonB, alert.freq_once_per_bar_close)
+
+if trigExitAllSells and haveActiveSell
+    float yS = close
+    for i = last to 0
+        if array.get(a_active, i) and array.get(a_filled, i) and not array.get(a_isBuy, i)
+            array.set(a_active, i, false)
+    label lb_exitall_s = label.new(bar_index, yS, "EXIT ALL", yloc=yloc.belowbar, style=label.style_label_left, textcolor=color.white, color=color.new(color.red, 0), size=size.normal)
+    array.push(A_LB, lb_exitall_s), array.push(A_T, int(time))
+    exitAllOk := true
+    string exitAllTxtS  = "EXIT ALL — " + syminfo.ticker + " " + timeframe.period + " | SELL side"
+    string exitAllJsonS = "{ \"content\": \"" + exitAllTxtS + "\" }"
+    alert(exitAllJsonS, alert.freq_once_per_bar_close)
+
+// === Session end: EXIT ALL (retain br1 behavior)
+bool loEndBar = eLO or (inLO[1] and not inLO)   // robust on TF mismatches
+bool nyEndBar = eNY or (inNY[1] and not inNY)
+if loEndBar or nyEndBar
+    string sessReason = loEndBar ? "LO end" : nyEndBar ? "NY end" : "Session end"
+    int last2 = array.size(a_id) - 1
+    bool drewLabel = false
+    if last2 >= 0
+        for i = last2 to 0
+            if array.get(a_active, i) and array.get(a_filled, i)
+                bool isBuy = array.get(a_isBuy, i)
+                array.set(a_active, i, false)
+                if not drewLabel
+                    float yE = close
+                    color exitBgAll = isBuy ? color.new(color.lime, 0) : color.new(color.red, 0)
+                    label lb_exitall_end = label.new(bar_index, yE, "EXIT ALL", yloc=(isBuy ? yloc.abovebar : yloc.belowbar), style=label.style_label_left, textcolor=color.white, color=exitBgAll, size=size.normal)
+                    array.push(A_LB, lb_exitall_end), array.push(A_T, int(time))
+                    drewLabel := true
+                    exitAllOk := true
+                    string exitAllTxt  = "EXIT ALL — " + syminfo.ticker + " " + timeframe.period + " | " + sessReason
+                    string exitAllJson = "{ \"content\": \"" + exitAllTxt + "\" }"
+                    alert(exitAllJson, alert.freq_once_per_bar_close)
+
+// === AUTO-CLEAN labels older than 24h
+if array.size(A_LB) > 0
+    int i = array.size(A_LB) - 1
+    int tNow = int(time)
+    while i >= 0
+        int t0 = array.get(A_T, i)
+        if tNow - t0 > MS_24H
+            label lb_old = array.get(A_LB, i)
+            label.delete(lb_old)
+            array.remove(A_LB, i)
+            array.remove(A_T, i)
+        i -= 1
+
+// ————————————————————————————————————————————————
+// SL/TP LIST PANEL — padded under title (so it doesn't get covered)
+// ————————————————————————————————————————————————
+var string groupPanel = "SL/TP Panel"
+Show_SLTP_Panel   = input.bool(true, "Show SL/TP list", group=groupPanel)
+Panel_Max_Rows    = input.int(12, "Max visible rows", minval=3, maxval=30, group=groupPanel)
+Panel_Top_Padding = input.int(3, "Top padding (rows)", minval=0, maxval=10, group=groupPanel)  // push down from very top-left
+
+var table tList = na
+if barstate.isfirst
+    // Height = header(1) + padding + rows
+    tList := table.new(position.top_left, 1, Panel_Top_Padding + Panel_Max_Rows + 1)
+    table.cell(tList, 0, 0, "Open SL/TP")
+    table.cell_set_text_color(tList, 0, 0, color.white)
+
+f_row_color(isBuy) => isBuy ? color.new(color.lime, 0) : color.new(color.red, 0)
+
+f_fmt(v) => str.tostring(v, format.mintick)
+
+f_update_panel() =>
+    if Show_SLTP_Panel and not na(tList)
+        // clear rows (keep header)
+        int total = Panel_Top_Padding + Panel_Max_Rows
+        for r = 1 to total
+            table.cell(tList, 0, r, "")
+        // start after padding
+        int row = 1 + Panel_Top_Padding
+        int n = array.size(a_id) - 1
+        if n >= 0
+            for i = n to 0
+                bool act = array.get(a_active, i)
+                bool fil = array.get(a_filled, i)
+                if act and fil and row <= (Panel_Top_Padding + Panel_Max_Rows)
+                    bool isBuy = array.get(a_isBuy, i)
+                    int  id    = array.get(a_id, i)
+                    float sl   = array.get(a_sl,  i)
+                    float tp1  = array.get(a_tp1, i)
+                    float tp2  = array.get(a_tp2, i)
+                    string side = isBuy ? "BUY" : "SELL"
+                    string txt  = side + str.tostring(id) + "  SL " + f_fmt(sl) + "  TP " + f_fmt(tp1) + "/" + f_fmt(tp2)
+                    table.cell(tList, 0, row, txt)
+                    table.cell_set_text_color(tList, 0, row, f_row_color(isBuy))
+                    row += 1
+
+f_update_panel()
+
+// — visuals
+var line lnBOS = na
+if bosUp_LTF
+    if not na(lnBOS)
+        line.delete(lnBOS)
+    lnBOS := line.new(bar_index-2, lastPvH, bar_index+2, lastPvH, color=colBOS, style=line.style_dashed, width=2)
+if bosDown_LTF
+    if not na(lnBOS)
+        line.delete(lnBOS)
+    lnBOS := line.new(bar_index-2, lastPvL, bar_index+2, lastPvL, color=colBOS, style=line.style_dashed, width=2)
+
+plotshape(bosUp_LTF,  title="BOS up", style=shape.diamond, location=location.abovebar, color=colBOS, size=size.tiny, text="BOS")
+plotshape(bosDown_LTF,title="BOS dn", style=shape.diamond, location=location.belowbar, color=colBOS, size=size.tiny, text="BOS")
+
+var bool momentumAny = false
+momentumAny := (close>open and close>close[1]) or (close<open and close<close[1])
+if buyOk or sellOk
+    float topScore = math.max(scoreUp, scoreDn)
+    string txtBadge = (momentumAny ? "⚡ " : "") + "S:" + str.tostring(topScore, format.mintick)
+    label.new(bar_index, close, txtBadge, yloc=(close>open ? yloc.belowbar : yloc.abovebar), style=label.style_label_left, textcolor=colScoreText, color=color.new(colMomentum, 10), size=size.tiny)
+
+var label lbBias = na
+if na(lbBias) or newDay
+    if not na(lbBias)
+        label.delete(lbBias)
+    lbBias := label.new(bar_index, high, "BIAS: " + biasTxt, style=label.style_label_left, textcolor=color.white, color=color.new(color.black, 100), size=size.tiny)
+
+if sweptAnyLow
+    label.new(bar_index, low, "○", yloc=yloc.belowbar, style=label.style_label_up, textcolor=colSweepPOI, color=color.new(color.white, 100), size=size.tiny)
+if sweptAnyHigh
+    label.new(bar_index, high, "○", yloc=yloc.abovebar, style=label.style_label_down, textcolor=colSweepPOI, color=color.new(color.white, 100), size=size.tiny)
+
+var table tChip = table.new(position.top_right, 1, 1)
+if barstate.isfirst
+    table.cell(tChip, 0, 0, "")
+string sessTxt = inLO ? "LO" : inNY ? "NY" : "—"
+string arr = biasBull ? "↑" : biasBear ? "↓" : "↔"
+color chipBg = inLO ? color.new(Color_LO, 70) : inNY ? color.new(Color_NY, 70) : color.new(color.gray, 85)
+color chipTxt = biasBull ? color.new(color.lime, 0) : (biasBear ? color.new(color.red, 0) : color.new(color.silver, 0))
+table.cell_set_text(tChip, 0, 0, "4H+1H: " + biasTxt + " | " + sessTxt + " " + arr)
+table.cell_set_text_color(tChip, 0, 0, chipTxt)
+table.cell_set_bgcolor(tChip, 0, 0, chipBg)
+
+// ————— Alerts
+alertcondition(buyOk,        title="BUY",                    message="BUY signal — pogledaj labele na chartu (Entry/Exit ALL).")
+alertcondition(sellOk,       title="SELL",                   message="SELL signal — pogledaj labele na chartu (Entry/Exit ALL).")
+alertcondition(exitAllOk,    title="EXIT ALL",               message="EXIT ALL — masovni izlaz (dominant side / SL-TP1 / session end).")
+alertcondition(preLO_start,  title="LONDON — 15m to open",   message="London session opens in 15 minutes.")
+alertcondition(preNY_start,  title="NEW YORK — 15m to open", message="New York session opens in 15 minutes.")
