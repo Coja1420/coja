@@ -258,55 +258,19 @@
     @media (max-width:1180px){ .guide{display:none} }
 
     @media (max-width: 768px){
-      .container{padding:0 16px}
-      .nav{height:64px}
-      .hero{min-height:auto; padding:72px 16px 28px; gap:28px; overflow:hidden !important}
-      .copy h1{font-size:clamp(28px,7vw,42px)}
-      .copy p{font-size:15px}
-      .benefits{gap:8px}
-      .features-count{gap:14px}
-      .stage{min-height:420px; transform:scale(.86); transform-origin:top center}
-      .grid-3{gap:14px}
-      .card{padding:18px}
-      .plan-title{font-size:16px}
-      .price{font-size:32px}
-      .btn.full{padding:12px 14px}
-      .table{overflow-x:auto; display:block}
-      .table table{min-width:760px}
-      .world,.matrix,.matrix.sides,.meteor{display:none}
+      .stage, .phone, .screen{ display:none !important; }
+      .hero{ grid-template-columns:1fr !important; text-align:center !important; padding:80px 16px 28px !important; gap:24px !important; }
+      .copy{ margin:0 auto !important; max-width:720px !important; }
+      .cta-hero{ justify-content:center !important; }
+      #about .container{ display:block !important; }
+      #about h2{ margin-top:0; }
+      #about p{ font-size:15px !important; line-height:1.45 !important; margin:0 0 10px !important; }
+      .quote{ padding:16px !important; }
+      .quote p{ font-size:16px !important; line-height:1.35 !important; margin:0 !important; }
+      .grid-two{ grid-template-columns:1fr !important; gap:16px !important; }
+      #updates .quote{ margin-top:8px; }
     }
-    @media (max-width: 520px){
-      .stage{min-height:360px; transform:scale(.74)}
-      .copy p{max-width:unset}
-      .row{grid-template-columns:1fr}
-      .cta-hero{gap:10px}
-      .price{font-size:30px}
-    }
-    @media (max-width: 380px){
-      .stage{transform:scale(.66)}
-      .btn{padding:10px 14px}
-      .input,.textarea{padding:16px 12px 10px}
-    }
-  
-    .cta-band{ position:relative; padding:42px 0; background:transparent !important; border:0 !important; }
-    .cta-band::before{
-      content:""; position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%);
-      width:100vw; z-index:-1; pointer-events:none;
-      background:radial-gradient(800px 400px at 20% -20%, #00ffc21a, transparent 60%), #081823;
-      border-top:1px solid rgba(0,255,194,.22);
-      border-bottom:1px solid rgba(0,255,194,.22);
-    }
-
-@media (max-width:980px){ .nav-cta{ display:inline-flex !important; } }
-@media (max-width:980px){ html.is-logged-in .nav-cta{ display:none !important; } }
-.pill svg{display:block}
-@media (max-width: 768px){
-  footer .cols{ grid-template-columns:1fr !important; }
-  footer .cols > div{ margin-bottom:12px; }
-  footer .cols [style*="display:flex"][style*="gap:12px"][style*="margin-top:12px"]{ flex-wrap: wrap; }
-  footer .footer-emails a{ word-break: break-word; }
-}
-</style>
+  </style>
 
 <style id="promo-and-countdown">
   .promo-bar{
@@ -358,6 +322,8 @@
   #about p{ font-size:15px !important; line-height:1.45 !important; margin:0 0 10px !important; }
   .quote{ padding:16px !important; }
   .quote p{ font-size:16px !important; line-height:1.35 !important; margin:0 !important; }
+  .grid-two{ grid-template-columns:1fr !important; gap:16px !important; }
+  #updates .quote{ margin-top:8px; }
 }
 </style>
 
@@ -512,7 +478,7 @@
   </div>
 </section>
 
-<section class="reveal" id="pricing" data-mode="normal">
+<section class="reveal" id="pricing" data-mode="trial">
 <div class="container">
 
   <style>
@@ -547,7 +513,7 @@
       background:linear-gradient(180deg,var(--accent-off), #00bca5);
       transform:translateX(0%); transition:transform .25s ease, background .25s ease;
     }
-    .ap-toggle[aria-pressed="true"] .knob{ transform:translateX(100%); background:linear-gradient(180deg,var(--accent-on), #3186ff); }
+    .ap-toggle[aria-pressed="true"] .knob{ transform:translateX(calc(100% + 8px)); background:linear-gradient(180deg,var(--accent-on), #3186ff); }
 
     /* Visibility rules for plan groups */
     #pricing .plans{ display:none; opacity:0; transform:translateY(6px); transition:opacity .25s ease, transform .25s ease }
@@ -575,7 +541,7 @@
 
   <div class="pricing-head">
     <h2>Pricing &amp; Plans</h2>
-    <button id="trialToggle" class="ap-toggle" type="button" aria-pressed="false" aria-label="Toggle trial view">
+    <button id="trialToggle" class="ap-toggle" type="button" aria-pressed="true" aria-label="Toggle trial view">
       <span class="labels" aria-hidden="true">
         <span class="label-left">Trial</span>
         <span class="label-right">Plans</span>
@@ -604,7 +570,7 @@
         <div class="li"><span class="no">✕</span><div>Faster support response</div></div>
         <div class="li"><span class="no">✕</span><div><b>No TP/SL levels</b></div></div>
       </div>
-      <a class="btn full" href="#" rel="noopener" target="_blank">Get Started →</a>
+      <a class="btn full" href="https://advancexplus.gumroad.com/l/normal" rel="noopener" target="_blank">Get Started →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">Billed monthly. Cancel anytime.</div>
     </article>
 
@@ -625,7 +591,7 @@
         <div class="li"><span class="no">✕</span><div><b>Priority upgrades</b></div></div>
         <div class="li"><span class="no">✕</span><div><b>Highest priority support</b></div></div>
       </div>
-      <a class="btn full" href="#" rel="noopener" target="_blank">Get Started →</a>
+      <a class="btn full" href="https://advancexplus.gumroad.com/l/Pro" rel="noopener" target="_blank">Get Started →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">Billed monthly. Cancel anytime.</div>
     </article>
 
@@ -640,7 +606,7 @@
         <div class="li"><span class="ok">✓</span><div><b>Priority upgrades</b></div></div>
         <div class="li"><span class="ok">✓</span><div>Exclusive materials</div></div>
       </div>
-      <a class="btn full" href="#">Secure Lifetime Access →</a>
+      <a class="btn full" href="https://advancexplus.com/?page_id=174">Secure Lifetime Access →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">Installments available: <b>3× €179</b></div>
     </article>
   </div>
@@ -665,7 +631,7 @@
         <div class="li"><span class="no">✕</span><div>Faster support</div></div>
         <div class="li"><span class="no">✕</span><div><b>No TP/SL levels</b></div></div>
       </div>
-      <a class="btn full" href="#" rel="noopener" target="_blank">Start Free Trial →</a>
+      <a class="btn full" href="https://advancexplus.gumroad.com/l/normalfree" rel="noopener" target="_blank">Start Free Trial →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">€19/mo after trial unless canceled.</div>
     </article>
 
@@ -686,7 +652,7 @@
         <div class="li"><span class="no">✕</span><div><b>Priority upgrades</b></div></div>
         <div class="li"><span class="no">✕</span><div><b>Highest priority support</b></div></div>
       </div>
-      <a class="btn full" href="#" rel="noopener" target="_blank">Start Free Trial →</a>
+      <a class="btn full" href="https://advancexplus.gumroad.com/l/profree" rel="noopener" target="_blank">Start Free Trial →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">€39/mo after trial unless canceled.</div>
     </article>
 
@@ -701,7 +667,7 @@
         <div class="li"><span class="ok">✓</span><div><b>Priority upgrades</b></div></div>
         <div class="li"><span class="ok">✓</span><div>Exclusive materials</div></div>
       </div>
-      <a class="btn full" href="#">Secure Lifetime Access →</a>
+      <a class="btn full" href="https://advancexplus.com/?page_id=174">Secure Lifetime Access →</a>
       <div class="muted" style="font-size:12px;margin-top:8px">Installments available: <b>3× €179</b></div>
     </article>
   </div>
@@ -894,7 +860,9 @@
     sections.forEach((sec, i) => { if (sec && sec.offsetTop <= off) idx = i; });
     links.forEach((a,i)=>a.classList.toggle('active', i===idx));
   };
-  document.addEventListener('scroll', setActive, {passive:true}); setActive();
+  document.addEventListener('scroll', setActive, {passive:true});
+  window.addEventListener('resize', setActive, {passive:true});
+  setActive();
   links.forEach(a => a.addEventListener('click', e => {
     e.preventDefault();
     document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth', block:'start'});
@@ -985,9 +953,12 @@
   const setMode = (trialOn) => {
     pricing.setAttribute('data-mode', trialOn ? 'trial' : 'normal');
     btn.setAttribute('aria-pressed', trialOn ? 'true' : 'false');
+    btn.setAttribute('aria-label', trialOn ? 'Viewing Trial plans' : 'Viewing Normal plans');
   };
+  const initialIsTrial = (pricing.getAttribute('data-mode') || '').toLowerCase() === 'trial';
+  setMode(initialIsTrial);
   btn.addEventListener('click', () => {
-    const on = btn.getAttribute('aria-pressed') !== 'true';
+    const on = pricing.getAttribute('data-mode') !== 'trial';
     setMode(on);
   });
   try{
