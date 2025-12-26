@@ -1,0 +1,1083 @@
+<!-- Advance Plus — Updated 1.2.1 — Daily countdown @12:00 + Pricing Free Trial toggle (trial lists mirror normal/pro)
+     Pricing toggle: dual-color + readable label + trial card accent sync -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+    :root{
+      --bg:#0b1518; --bg2:#0f1d21; --bg3:#0c191d;
+      --text:#eaf3f2; --muted:#98a7a6;
+      --mint:#00ffc2; --mint-2:#00d9a7;
+      --mint-08:rgba(0,255,194,.08); --mint-16:rgba(0,255,194,.16); --mint-20:rgba(0,255,194,.20);
+      --stroke:rgba(255,255,255,.08);
+      --radius:16px; --shadow:0 10px 30px rgba(0,0,0,.35); --maxw:1200px;
+      --r:26px;
+      --guide-w:300px;
+      --guide-gap:20px;
+      --promo-h:0px; /* measured at runtime */
+
+      /* NEW: dual-accent system */
+      --accent-normal:#00d6c1;   /* left/off (Normal) */
+      --accent-trial:#4da3ff;    /* right/on  (Trial)  */
+      --accent-normal-20: rgba(0,214,193,.20);
+      --accent-trial-20: rgba(77,163,255,.20);
+      --accent-trial-35: rgba(77,163,255,.35);
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    html,body{margin:0;background:transparent !important}
+
+    .elementor, .elementor-section, .elementor-container, .elementor-widget-wrap{
+      background-color:transparent !important; background-image:none !important;
+    }
+
+    #ap-bg{
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(1200px 600px at 80% 15%, #0E2E33 0%, var(--bg) 55%) no-repeat,
+        var(--bg);
+      background-attachment:fixed;
+    }
+
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text); line-height:1.6; letter-spacing:.1px}
+    a{color:var(--text);text-decoration:none}
+    .container{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;background:linear-gradient(180deg,var(--mint),var(--mint-2));color:#011310;font-weight:800;border:0;border-radius:12px;padding:12px 16px;box-shadow:0 0 0 1px var(--mint-20),0 10px 30px -12px var(--mint-20);transition:transform .15s ease, box-shadow .2s ease}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 0 0 3px var(--mint-20),0 22px 40px -18px var(--mint-20)}
+    .btn.light{background:rgba(255,255,255,.06); color:#eafff9; border:1px solid var(--stroke); box-shadow:none}
+    .pill{padding:8px 12px;border-radius:999px;background:var(--mint-08);color:var(--mint);border:1px solid var(--mint-20)}
+    .muted{color:var(--muted)}
+    .sr-only{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+
+    .fx-bg{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+    .world{position:absolute; right:-15%; top:-10%; width:1200px; max-width:70vw; opacity:.20; filter:contrast(110%) brightness(85%); animation:world-rot 140s linear infinite}
+    .world svg{width:100%; height:auto}
+    @keyframes world-rot{ from{transform:rotateZ(0)} to{transform:rotateZ(-360deg)} }
+    .matrix{ position:absolute; inset:auto 0 0 0; height:28vh; display:flex; gap:14px; justify-content:space-between; padding:0 5vw; color:#0fe8c6; opacity:.12; font-weight:600; letter-spacing:.5px; writing-mode:vertical-rl; text-orientation:upright; font-size:14px; line-height:1.15; -webkit-mask-image:linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0)); mask-image:linear-gradient(to top, rgba(0,0,0,.6), rgba(0,0,0,0)); }
+    .stream{ white-space:nowrap; animation:rain 8s linear infinite }
+    .matrix .stream{ animation-duration: calc(10s + (var(--i,1) * 1.2s)); animation-delay: calc(var(--d,0) * 1s) }
+    @keyframes rain{ from{ transform:translateY(-100%) } to{ transform:translateY(100%) } }
+    .matrix.sides{ inset:0 0 0 0; height:auto; }
+    .matrix.sides .stream{ position:absolute; top:-10vh; bottom:-10vh; width:20px; }
+    .matrix.sides .stream.left{ left:2vw } .matrix.sides .stream.right{ right:2vw }
+    .starfield{ position:absolute; inset:0 }
+    .meteor{ position:absolute; top:-10vh; right:-10vw; width:3px; height:3px; border-radius:50%; background:radial-gradient(circle, #eafcff 0%, rgba(255,255,255,.6) 45%, transparent 70%); filter:drop-shadow(0 0 6px rgba(140,220,255,.9)); animation:starfall 6s linear infinite; opacity:.9 }
+    .meteor::after{ content:""; position:absolute; top:50%; left:50%; width:160px; height:2px; transform:translate(-50%,-50%) rotate(-35deg); background:linear-gradient(90deg, rgba(160,220,255,.9), rgba(160,220,255,.2), transparent 80%); border-radius:2px; filter:blur(.3px) }
+    @keyframes starfall{ from{ transform:translate(0,0) } to{ transform:translate(-120vw, 70vh) } }
+    @media (prefers-reduced-motion: reduce){ .world, .matrix .stream, .meteor{ animation:none !important } }
+
+    main#app{position:relative; z-index:1}
+    header{position:sticky; top:var(--promo-h,0px); z-index:9998; backdrop-filter:saturate(150%) blur(8px); background:linear-gradient(180deg, rgba(11,21,24,.85), rgba(11,21,24,.55)); border-bottom:1px solid rgba(255,255,255,.05)}
+    .nav{display:flex;align-items:center;justify-content:space-between;height:72px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:40px;height:40px}.brand span{font-weight:900;letter-spacing:.6px}
+    .nav-links{display:flex;gap:22px;align-items:center}.nav-links a{opacity:.9}
+    .nav-cta{margin-left:auto}
+    .burger{display:none;background:none;border:0;color:var(--text);font-size:26px}
+    @media (max-width:980px){
+      .nav-links{display:none;position:absolute;top:72px;left:0;right:0;padding:14px 24px;background:#0b1719;border-bottom:1px solid var(--stroke)}
+      .nav-links.open{display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+      .burger{display:block}
+      .nav-cta{display:none}
+    }
+
+    section{padding:56px 0}
+
+    header .nav{ position:relative; z-index:50; }
+    body.at-top header{ background:#0b1518 !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+    body.at-top header::before{ content:""; position:fixed; left:0; right:0; top:var(--promo-h,0px); height:80px; background:#0b1518; pointer-events:none; z-index:49; }
+
+    h2{font-size:36px;margin:0 0 18px}
+
+    #about{scroll-margin-top:96px}
+    @media (max-width:980px){ #about{scroll-margin-top:84px} }
+    @media (max-width:768px){ #about{scroll-margin-top:72px} }
+
+    .hero{
+      position:relative; isolation:isolate; overflow:visible !important;
+      min-height:90vh; width:100%;
+      display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center;
+      padding:96px clamp(20px,4vw,48px);
+      background:none !important;
+    }
+    @media (max-width:1080px){ .hero{grid-template-columns:1fr; padding-top:72px} }
+    .copy{position:relative; z-index:3; max-width:720px; font-family:Montserrat,Inter,system-ui}
+    .copy h1{margin:0 0 16px; font-size:clamp(36px,5.2vw,62px); line-height:1.05; font-weight:800; letter-spacing:.2px; position:relative; }
+    .copy p{margin:0 0 22px; color:#d8e0e7; max-width:48ch}
+    .benefits{margin:18px 0 26px; padding:0; list-style:none; display:grid; gap:10px}
+    .benefits li{display:flex; align-items:center; gap:10px; color:#d2e8e3}
+    .benefits li::before{
+      content:""; width:18px; height:18px; border-radius:999px; flex:0 0 18px;
+      background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2300e5c4' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") no-repeat center/14px 14px, rgba(0,230,196,.12);
+      border:1px solid rgba(0,230,196,.45);
+    }
+
+    .features-count{display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; margin:8px 0 22px}
+    .features-count .benefits{margin:0}
+    .features-count .countdown{margin-top:0}
+
+    .cta-hero{display:flex; gap:14px; flex-wrap:wrap}
+    .btn.primary{background:linear-gradient(180deg,#00d6c1,#00c698); color:#051e1a; box-shadow:0 0 0 1px rgba(0,230,196,.25), 0 16px 46px rgba(0,230,196,.18)}
+    .btn.secondary{background:transparent;color:#cffff3;border:1px solid rgba(0,230,196,.55)}
+
+    .stage{position:relative; z-index:3; min-height:560px; display:grid; place-items:center; perspective:1400px; perspective-origin:60% 40%}
+    .phone{position:absolute; width:320px; height:640px; border-radius:var(--r); background:linear-gradient(180deg,#0a1218,#070c10); border:1px solid rgba(255,255,255,.06); box-shadow: 0 28px 90px rgba(0,0,0,.65), inset 0 0 0 2px rgba(255,255,255,.03); overflow:hidden; transform-style:preserve-3d}
+    .phone::before{content:""; position:absolute; top:12px; left:50%; transform:translateX(-50%); width:38%; height:18px; border-radius:12px; background:rgba(255,255,255,.06); box-shadow:inset 0 -1px 0 rgba(0,0,0,.45)}
+    .screen{position:absolute; inset:18px; border-radius:18px; overflow:hidden; background:#081116; box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+    .phone.front{transform: translate3d(20px,0,0) rotateY(-16deg) rotateX(7deg) rotateZ(-2.2deg); animation:floatA 6.4s ease-in-out infinite; z-index:4}
+    .phone.back{width:300px; height:600px; transform: translate3d(150px,30px,-90px) rotateY(18deg) rotateX(6deg) rotateZ(4deg); animation:floatB 7.1s ease-in-out infinite; z-index:3; filter:saturate(95%) brightness(95%)}
+    @keyframes floatA{0%,100%{ transform:translate3d(20px,-6px,0) rotateY(-16deg) rotateX(7deg) rotateZ(-2.2deg) } 50%{ transform:translate3d(20px, 6px,0) rotateY(-14deg) rotateX(7deg) rotateZ(-2.2deg) }}
+    @keyframes floatB{0%,100%{ transform:translate3d(150px,24px,-90px) rotateY(18deg) rotateX(6deg) rotateZ(4deg) } 50%{ transform:translate3d(150px,10px,-90px) rotateY(22deg) rotateX(6deg) rotateZ(4deg) }}
+
+    .screen--chart{position:absolute; inset:18px; border-radius:18px; overflow:hidden; background-color:#0a1116; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='420' viewBox='0 0 800 420'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%230a1216'/><stop offset='100%' stop-color='%23060b0e'/></linearGradient></defs><rect width='800' height='420' fill='url(%23g)'/><g stroke='%2316282f' stroke-width='1' opacity='.9'><path d='M0 60 H800M0 120 H800M0 180 H800M0 240 H800M0 300 H800M0 360 H800'/><path d='M40 0 V420M80 0 V420M120 0 V420M160 0 V420M200 0 V420M240 0 V420M280 0 V420M320 0 V420M360 0 V420M400 0 V420M440 0 V420M480 0 V420M520 0 V420M560 0 V420M600 0 V420M640 0 V420M680 0 V420M720 0 V420M760 0 V420'/></g><g stroke-linecap='round' stroke-width='2'><g stroke='%2336e6a9' fill='%2336e6a9' opacity='.95'><line x1='30' y1='120' x2='30' y2='220'/><rect x='26' y='150' width='8' height='50' rx='2'/><line x1='78' y1='90'  x2='78' y2='180'/><rect x='74' y='110' width='8' height='40' rx='2'/><line x1='126' y1='140' x2='126' y2='260'/><rect x='122' y='180' width='8' height='46' rx='2'/><line x1='174' y1='110' x2='174' y2='200'/><rect x='170' y='130' width='8' height='48' rx='2'/><line x1='222' y1='130' x2='222' y2='260'/><rect x='218' y='170' width='8' height='60' rx='2'/><line x1='270' y1='150' x2='270' y2='260'/><rect x='266' y='190' width='8' height='48' rx='2'/><line x1='318' y1='120' x2='318' y2='210'/><rect x='314' y='140' width='8' height='40' rx='2'/><line x1='366' y1='100' x2='366' y2='210'/><rect x='362' y='130' width='8' height='58' rx='2'/></g><g stroke='%23e35b5b' fill='%23e35b5b' opacity='.95'><line x1='54' y1='90'  x2='54' y2='210'/><rect x='50' y='140' width='8' height='52' rx='2'/><line x1='102' y1='130' x2='102' y2='240'/><rect x='98' y='160' width='8' height='60' rx='2'/><line x1='150' y1='110' x2='150' y2='200'/><rect x='146' y='140' width='8' height='36' rx='2'/><line x1='198' y1='150' x2='198' y2='280'/><rect x='194' y='200' width='8' height='66' rx='2'/><line x1='246' y1='120' x2='246' y2='230'/><rect x='242' y='150' width='8' height='40' rx='2'/><line x1='294' y1='160' x2='294' y2='300'/><rect x='290' y='210' width='8' height='70' rx='2'/><line x1='342' y1='140' x2='342' y2='260'/><rect x='338' y='180' width='8' height='46' rx='2'/><line x1='390' y1='120' x2='390' y2='220'/><rect x='386' y='150' width='8' height='50' rx='2'/></g></g></svg>");
+      background-repeat:repeat-x; background-size:800px 420px; animation:chart-scroll 28s linear infinite}
+    @keyframes chart-scroll{ from{background-position-x:0} to{background-position-x:-800px} }
+    .screen--chart::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)); pointer-events:none }
+    .screen--list{position:absolute; inset:18px; border-radius:18px; overflow:hidden; background:radial-gradient(520px 260px at 32% -12%, rgba(0,230,196,.10), transparent 62%), linear-gradient(180deg,#08131a,#071017); display:flex; flex-direction:column; padding:14px; gap:8px}
+    .list-head{display:flex; align-items:center; justify-content:space-between; color:#bfeee3; font-size:12px; opacity:.9}
+    .rows{display:grid; gap:8px}
+    .row{display:grid; grid-template-columns: 1fr auto auto; align-items:center; gap:10px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:10px 12px; font-size:14px}
+    .sym{color:#eaf7f3; font-weight:600}
+    .val, .pct{font-variant-numeric:tabular-nums; letter-spacing:.3px}
+    .pct{font-size:12px; padding:4px 6px; border-radius:6px; background:rgba(255,255,255,.03)}
+    .up{color:#35df9f} .down{color:#ff7d7d}
+
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:22px 0 6px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid var(--stroke);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .card.best{border-color:rgba(0,255,194,.45);box-shadow:0 0 0 1px rgba(0,255,194,.25), 0 25px 60px rgba(0,255,194,.08), var(--shadow)}
+    .plan-title{font-size:18px;font-weight:800;margin:2px 0 4px}
+    .sub{color:#b6c8c3;font-size:14px;margin-bottom:16px}
+    .price{font-size:38px;font-weight:900;letter-spacing:.5px;margin:6px 0}
+    .price small{font-size:14px;color:#b6c8c3;font-weight:600;margin-left:6px}
+    .old{color:#7e8f8b;text-decoration:line-through;margin-left:8px;font-size:14px}
+    .pill.badge{position:absolute;top:16px;right:16px}
+    .list{display:grid;gap:10px;margin:16px 0 18px}
+    .li{display:grid;grid-template-columns:24px 1fr;align-items:flex-start;gap:10px}
+    .ok,.no{width:18px;height:18px;border-radius:999px;display:inline-grid;place-items:center;font-size:12px}
+    .ok{background:rgba(0,255,194,.12);border:1px solid rgba(0,255,194,.4);color:#27f1b2}
+    .no{background:rgba(241,91,108,.12);border:1px solid rgba(241,91,108,.35);color:#f15b6c}
+    .btn.full{width:100%}
+    .table{margin-top:22px;border:1px solid var(--stroke);border-radius:var(--radius);overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);box-shadow:var(--shadow)}
+    .table table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:14px 16px;border-bottom:1px solid var(--stroke)}
+    .table thead th{background:rgba(255,255,255,.04);text-align:left}
+    .table tbody tr:hover{background:rgba(0,255,194,.04)}
+    .mark{display:inline; width:auto; height:auto; border-radius:0}
+    .yes{border:none; background:none; color:#27f1b2}
+    .nope{border:none; background:none; color:#f15b6c}
+    @media (max-width:1000px){ .grid-3{grid-template-columns:1fr} }
+
+    .about{display:grid;grid-template-columns:1.1fr .9fr;gap:36px}
+    .quote{background:linear-gradient(180deg,#0E2327,#0B171A);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:26px 28px;box-shadow:var(--shadow)}
+    .quote p{font-size:20px;line-height:1.5;margin:0}.quote strong{color:#00ffc2}
+    .grid-two{display:grid;grid-template-columns:.95fr 1.05fr;gap:28px}
+    .contact-card{background:linear-gradient(180deg,#0b1b25,#0f2430);border:1px solid rgba(0,255,194,.16);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+    .field{position:relative;margin-top:10px}
+    .input,.textarea{width:100%;border:1px solid rgba(0,255,194,.2);background:#071922;color:#eafff9;border-radius:12px;padding:18px 14px 12px;font-size:15px}
+    input.input, .input[type="text"], .input[type="email"]{background:#071922 !important;color:#eafff9 !important;}
+    .textarea{min-height:160px;resize:vertical}
+    .label{position:absolute;left:12px;top:14px;color:#8fcfbe;transition:all .16s ease;background:transparent;padding:0 4px}
+    .field.filled .label, .field:focus-within .label{top:-9px;font-size:12px;color:#bfffe9;background:#071922}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .attach{border:2px dashed rgba(0,255,194,.28);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;background:#071922}
+    .attach.drag{border-style:solid;border-color:var(--mint);box-shadow:0 0 0 3px rgba(0,255,194,.35)}
+    .attach input[type=file]{display:none}
+    .attach .hint{color:#9fead7;font-size:14px}
+    .attach-list{margin-top:8px;font-size:13px;color:#cffdef}
+
+    .cta-band{padding:42px 0;background:transparent;border:0}
+    .cta-band .wrap{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+
+    footer{padding:46px 0;color:#bff6e8}
+    .cols{display:grid;gap:22px;grid-template-columns:1.2fr .9fr .9fr}.cols a{color:#d7fff5}
+
+    .reveal{opacity:1;transform:none}
+    .has-js .reveal{opacity:0;transform:translateY(16px)}
+    .has-js .reveal.visible{opacity:1;transform:none;transition:opacity .7s cubic-bezier(.2,.75,.25,1), transform .7s cubic-bezier(.2,.75,.25,1)}
+    .elementor-editor-active .reveal{opacity:1 !important; transform:none !important;}
+
+    .elementor .elementor-widget-html h1,
+    .elementor .elementor-widget-html h2,
+    .elementor .elementor-widget-html h3,
+    .elementor .elementor-widget-html h4,
+    .elementor .elementor-widget-html h5,
+    .elementor .elementor-widget-html h6,
+    .elementor .elementor-widget-html .copy h1{
+      color:#fff !important; opacity:1 !important; text-shadow:none !important;
+    }
+    .elementor .elementor-widget-html,
+    .elementor .elementor-widget-container,
+    .elementor .elementor-widget-wrap,
+    .elementor .elementor-column,
+    .elementor .elementor-container,
+    .elementor .elementor-section{ background:transparent !important; box-shadow:none !important; border:0 !important; }
+    .elementor .elementor-background-overlay{ background:transparent !important; opacity:0 !important; box-shadow:none !important; }
+    .elementor .elementor-section::before,
+    .elementor .elementor-container::before,
+    .elementor .elementor-widget-wrap::before{ content:none !important; }
+    .elementor .elementor-section{ padding-left:0 !important; padding-right:0 !important; }
+    .elementor .elementor-section.elementor-section-boxed > .elementor-container{ max-width:100vw !important; width:100vw !important; padding-left:0 !important; padding-right:0 !important; }
+    .elementor .elementor-container{ max-width:100vw !important; width:100vw !important; }
+    .elementor .elementor-section.elementor-section-stretched{ left:50% !important; right:auto !important; width:100vw !important; margin-left:-50vw !important; }
+    .elementor .elementor-widget-html header{ width:100vw !important; max-width:100vw !important; margin-left:calc(50% - 50vw) !important; margin-right:calc(50% - 50vw) !important; border-radius:0 !important; z-index:50; }
+    .elementor .elementor-widget-html .hero{ overflow:visible !important; }
+    .elementor .elementor-widget-html .hero::before,
+    .elementor .elementor-widget-html .hero::after,
+    .hero::before,
+    .hero::after{ content:none !important; background:none !important; }
+
+    .guide.tight .card{padding:10px;border-radius:16px}
+    .guide.tight h5{font-size:12px;margin:4px 6px}
+    .guide.tight .menu a{padding:6px 8px;font-size:13px}
+    .guide.tight .btn{padding:10px 12px;font-size:14px}
+    .guide.mini .card{padding:8px;border-radius:14px}
+    .guide.mini h5{font-size:11px;margin:2px 4px}
+    .guide.mini .menu a{padding:5px 7px;font-size:12px}
+    .guide.mini .btn{padding:8px 10px;font-size:13px}
+
+    .guide{
+      position:fixed; top:50%; transform:translateY(-50%);
+      left:max(12px, calc((100vw - var(--maxw)) / 2 - (var(--guide-w) + var(--guide-gap))));
+      width:var(--guide-w); z-index:49;
+    }
+    .guide .card{background:var(--bg2);border:1px solid var(--stroke);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
+    .guide h5{margin:6px 8px 8px;font-size:14px;color:#a8e5d7;letter-spacing:.3px}
+    .guide .menu{display:grid}
+    .guide .menu a{padding:9px 11px;border-radius:10px;color:#d9fff7;border:1px solid transparent}
+    .guide .menu a:hover{background:var(--bg3);border-color:var(--stroke)}
+    .guide .menu a.active{background:var(--mint-08);border-color:var(--mint-16);color:#eafff9;font-weight:700}
+    .guide .btn{width:100%;justify-content:center;margin-top:8px}
+
+    @media (max-width:1600px){ :root{ --guide-w:280px } .guide h5{font-size:13px} }
+    @media (max-width:1440px){ :root{ --guide-w:260px } }
+    @media (max-width:1366px){
+      :root{ --guide-w:220px }
+      .guide .menu a{padding:8px 10px;font-size:14px}
+      .guide .btn{padding:10px 12px}
+    }
+    @media (max-width:1280px){ :root{ --guide-w:200px } }
+    @media (max-width:1180px){ .guide{display:none} }
+
+    @media (max-width: 768px){
+      .container{padding:0 16px}
+      .nav{height:64px}
+      .hero{min-height:auto; padding:72px 16px 28px; gap:28px; overflow:hidden !important}
+      .copy h1{font-size:clamp(28px,7vw,42px)}
+      .copy p{font-size:15px}
+      .benefits{gap:8px}
+      .features-count{gap:14px}
+      .stage{min-height:420px; transform:scale(.86); transform-origin:top center}
+      .grid-3{gap:14px}
+      .card{padding:18px}
+      .plan-title{font-size:16px}
+      .price{font-size:32px}
+      .btn.full{padding:12px 14px}
+      .table{overflow-x:auto; display:block}
+      .table table{min-width:760px}
+      .world,.matrix,.matrix.sides,.meteor{display:none}
+    }
+    @media (max-width: 520px){
+      .stage{min-height:360px; transform:scale(.74)}
+      .copy p{max-width:unset}
+      .row{grid-template-columns:1fr}
+      .cta-hero{gap:10px}
+      .price{font-size:30px}
+    }
+    @media (max-width: 380px){
+      .stage{transform:scale(.66)}
+      .btn{padding:10px 14px}
+      .input,.textarea{padding:16px 12px 10px}
+    }
+  
+    .cta-band{ position:relative; padding:42px 0; background:transparent !important; border:0 !important; }
+    .cta-band::before{
+      content:""; position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%);
+      width:100vw; z-index:-1; pointer-events:none;
+      background:radial-gradient(800px 400px at 20% -20%, #00ffc21a, transparent 60%), #081823;
+      border-top:1px solid rgba(0,255,194,.22);
+      border-bottom:1px solid rgba(0,255,194,.22);
+    }
+
+@media (max-width:980px){ .nav-cta{ display:inline-flex !important; } }
+@media (max-width:980px){ html.is-logged-in .nav-cta{ display:none !important; } }
+.pill svg{display:block}
+@media (max-width: 768px){
+  footer .cols{ grid-template-columns:1fr !important; }
+  footer .cols > div{ margin-bottom:12px; }
+  footer .cols [style*="display:flex"][style*="gap:12px"][style*="margin-top:12px"]{ flex-wrap: wrap; }
+  footer .footer-emails a{ word-break: break-word; }
+}
+</style>
+
+<style id="promo-and-countdown">
+  .promo-bar{
+    position:fixed; top:0; left:0; right:0;
+    z-index:10000;
+    background:linear-gradient(180deg, rgba(0,255,194,.10), rgba(0,255,194,.06));
+    border-bottom:1px solid var(--mint-16);
+    color:#dffef6; font-weight:700;
+    text-align:center; padding:8px 0;
+    padding-top:env(safe-area-inset-top, 0px);
+    -webkit-backdrop-filter:saturate(150%) blur(8px);
+    backdrop-filter:saturate(150%) blur(8px);
+  }
+  @supports(padding:max(0px)){
+    .promo-bar{ padding-top:max(env(safe-area-inset-top), 8px); }
+  }
+  .promo-bar .container{ padding-left:22px; padding-right:22px; }
+  .promo-bar strong{ color:var(--mint); padding:0 4px; }
+
+  .countdown{ display:flex; gap:10px; align-items:stretch; justify-content:center; flex-wrap:nowrap; }
+  .countdown{ margin-top:12px; }
+  .cd-item{
+    flex:0 0 auto;
+    min-width:72px; text-align:center; padding:10px 12px;
+    border-radius:12px;
+    background:linear-gradient(180deg,#0c1d21,#09161a);
+    border:1px solid var(--mint-16);
+    box-shadow:0 8px 28px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.02);
+  }
+  .cd-item .num{ display:block; font-variant-numeric:tabular-nums; font-size:22px; font-weight:900; letter-spacing:.5px; color:#eafff9; }
+  .cd-item .lbl{ display:block; margin-top:2px; font-size:11px; letter-spacing:.35px; color:#9bded0; text-transform:uppercase; }
+  .cd-sep{ align-self:center; font-weight:900; opacity:.55; }
+  @media (max-width:520px){
+    .countdown{ gap:8px; }
+    .cd-item{ min-width:64px; padding:8px 10px; }
+    .cd-item .num{ font-size:20px; }
+    .cd-sep{ display:none; }
+  }
+</style>
+
+<style id="ap-mobile-fix-v4">
+@media (max-width: 768px){
+  .stage, .phone, .screen{ display:none !important; }
+  .hero{ grid-template-columns:1fr !important; text-align:center !important; padding:80px 16px 28px !important; gap:24px !important; }
+  .copy{ margin:0 auto !important; max-width:720px !important; }
+  .cta-hero{ justify-content:center !important; }
+  #about .container{ display:block !important; }
+  #about h2{ margin-top:0; }
+  #about p{ font-size:15px !important; line-height:1.45 !important; margin:0 0 10px !important; }
+  .quote{ padding:16px !important; }
+  .quote p{ font-size:16px !important; line-height:1.35 !important; margin:0 !important; }
+}
+</style>
+
+<style id="ap-table-mobile-fix">
+@media (max-width: 768px){
+  .table{ overflow:visible !important; }
+  .table table{ min-width:0 !important; width:100% !important; display:block; }
+  .table thead{ display:none !important; }
+  .table tbody{ display:grid; gap:12px; }
+  .table tbody tr{ display:grid; grid-template-columns:1fr; background:rgba(255,255,255,.02); border:1px solid var(--stroke); border-radius:12px; }
+  .table tbody tr:hover{ background:rgba(255,255,255,.02); }
+  .table tbody td{ padding:10px 12px; border-bottom:0; }
+  .table tbody td:nth-child(1){ font-weight:800; color:#eaf3f2; border-bottom:1px solid var(--stroke); }
+  .table tbody td:nth-child(n+2){ display:grid; grid-template-columns:94px 1fr; align-items:center; gap:8px; }
+  .table tbody td:nth-child(2)::before{ content:"Normal"; color:#9fd8cd; font-size:12px; letter-spacing:.2px; }
+  .table tbody td:nth-child(3)::before{ content:"Pro"; color:#9fd8cd; font-size:12px; letter-spacing:.2px; }
+  .table tbody td:nth-child(4)::before{ content:"Lifetime"; color:#9fd8cd; font-size:12px; letter-spacing:.2px; }
+  .table .mark{ font-size:15px; }
+}
+</style>
+
+<script>document.documentElement.classList.add('has-js');</script>
+<script>(function(){try{var b=window.AP_BOOT||{}; if(typeof b.loggedIn==='boolean'){ document.documentElement.classList.toggle('is-logged-in', !!b.loggedIn); }}catch(e){} })();</script>
+
+<div aria-hidden="true" id="ap-bg"></div>
+<div aria-hidden="true" class="fx-bg">
+  <div class="world">
+    <svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg"><g fill="#0c0f13" opacity="0.55"><path d="M270,190c40,-30 120,-30 150,10c22,30 10,70 30,100c20,30 60,30 70,60c12,35 -15,60 -40,80c-40,30 -70,70 -110,80c-55,15 -120,-10 -140,-50c-16,-32 0,-70 20,-100c18,-26 10,-70 0,-100c-12,-35 -20,-50 20,-80z"></path><path d="M520,80c30,-10 70,0 90,20c12,12 6,30 -10,40c-20,12 -56,18 -80,10c-25,-8 -34,-36 0,-50z"></path><path d="M760,160c80,-40 220,-40 340,0c80,26 160,40 210,90c40,40 34,92 -10,120c-40,26 -120,18 -160,40c-28,16 -24,40 -60,56c-56,26 -150,8 -210,-16c-40,16 -62,-32 -90,-62c-32,-34 -92,-40 -120,-76c-24 -30 -10,-78 100,-152z"></path><path d="M1040,340c40,-18 100,-6 130,30c30,36 30,96 10,130c-26,42 -72,62 -120,72c-50,10 -96,-10 -110,-46c-12,32 12,-64 34,-86c18,-18 16,-58 56,-100z"></path><path d="M1320,560c40,-10 110,0 140,30c20,20 10,50 -20,60c-30,10 -80,6 -120,-8c-30,10 -56,-36 -26,-60c8,-6 16,-14 26,-22z"></path><path d="M1240,500c18,-6 40,0 50,12c10,12 2,26 -20,28c-18,2 -40,-8 -44,-18c-4,-10 4,-18 14,-22z"></path></g></svg>
+  </div>
+  <div class="matrix">
+    <div class="stream" style="--i:1;--d:.2"><span>10100110100101101001011010010110</span></div>
+    <div class="stream" style="--i:2;--d:1.1"><span>01011001010110010101100101011001</span></div>
+    <div class="stream" style="--i:3;--d:1.8"><span>11001010010110010100101100101001</span></div>
+    <div class="stream" style="--i:4;--d:.6"><span>00110100101100101001011001010010</span></div>
+    <div class="stream" style="--i:5;--d:2.2"><span>10101001011001010010110010100101</span></div>
+    <div class="stream" style="--i:6;--d:1.5"><span>01100101001101001011001010010110</span></div>
+    <div class="stream" style="--i:7;--d:2.6"><span>10010110010100101100101001011001</span></div>
+    <div class="stream" style="--i:8;--d:.9"><span>01001101001011001010010110010100</span></div>
+    <div class="stream" style="--i:9;--d:1.7"><span>10100101100101001011001010010110</span></div>
+    <div class="stream" style="--i:10;--d:2.9"><span>00101100101001011001010010110010</span></div>
+    <div class="stream" style="--i:11;--d:2.1"><span>11001010010110010100101100101001</span></div>
+    <div class="stream" style="--i:12;--d:3.2"><span>01011001010110010101100101011001</span></div>
+    <div class="stream style" style="--i:13;--d:2.4"><span>10100110100101101001011010010110</span></div>
+    <div class="stream" style="--i:14;--d:3.6"><span>01001101001011001010010110010100</span></div>
+    <div class="stream style" style="--i:15;--d:1.3"><span>00110100101100101001011001010010</span></div>
+    <div class="stream" style="--i:16;--d:.4"><span>01100101001101001011001010010110</span></div>
+  </div>
+  <div class="matrix sides">
+    <div class="stream left" style="--i:2;--d:.8"><span>10100110100101101001</span></div>
+    <div class="stream right" style="--i:3;--d:1.4"><span>01011001010110010101</span></div>
+  </div>
+  <div class="starfield">
+    <div class="meteor"></div><div class="meteor"></div><div class="meteor"></div><div class="meteor"></div><div class="meteor"></div>
+  </div>
+</div>
+<main id="app">
+
+<div class="promo-bar">
+  <div class="container"><strong>7 DAYS FREE TRIAL</strong> Start today — cancel anytime.</div>
+</div>
+
+<a class="sr-only" href="#pricing">Skip to pricing</a>
+<header>
+  <div class="container nav">
+    <nav aria-label="Main navigation" class="nav-links" id="navlinks">
+      <a href="#start">Start now</a>
+      <a href="#updates">Update 1.1</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#about">About</a>
+    </nav>
+    <a class="btn nav-cta" href="https://advancexplus.com/?page_id=174">Login/SignIn</a>
+    <button aria-controls="navlinks" aria-expanded="false" aria-label="Menu" class="burger" id="burger">☰</button>
+  </div>
+</header>
+
+<aside aria-label="Guide topics" class="guide">
+  <div class="card">
+    <h5>Guide topics</h5>
+    <nav class="menu" id="guideMenu">
+      <a class="active" href="#start">Start now</a>
+      <a href="#updates">Update 1.1</a>
+      <a href="#pricing">Pricing &amp; Plans</a>
+      <a href="#about">About Us</a>
+    </nav>
+    <a class="btn" href="#pricing">Get Started</a>
+  </div>
+</aside>
+
+<section aria-label="Hero with 3D phones" class="hero" id="start">
+  <div class="copy">
+    <h1 class="animate-letters">Advance Plus</h1>
+    <div class="tagline">The Most Profitable Trading Indicator</div>
+    <p>Get accurate buy and sell trading signals straight to your smartphone or any device with our premium indicators for TradingView.</p>
+
+    <div class="features-count">
+      <ul class="benefits">
+        <li>Premium Indicators</li>
+        <li>Free charting tool</li>
+        <li>Easy Setup</li>
+        <li>Real-time alerts</li>
+      </ul>
+
+      <div id="deal-countdown" class="countdown" data-reset-hour="12" data-reset-minute="0" role="timer" aria-live="polite" aria-label="Daily countdown to 12:00">
+        <div class="cd-item" aria-label="Hours remaining"><span class="num" data-unit="h">00</span><span class="lbl">Hours</span></div>
+        <span class="cd-sep">:</span>
+        <div class="cd-item" aria-label="Minutes remaining"><span class="num" data-unit="m">00</span><span class="lbl">Minutes</span></div>
+        <span class="cd-sep">:</span>
+        <div class="cd-item" aria-label="Seconds remaining"><span class="num" data-unit="s">00</span><span class="lbl">Seconds</span></div>
+      </div>
+    </div>
+
+    <div class="cta-hero">
+      <a class="btn primary" href="#pricing">START YOUR FREE TRIAL</a>
+    </div>
+  </div>
+
+  <div aria-hidden="false" class="stage">
+    <div aria-label="Phone with candlestick chart" class="phone front"><div class="screen screen--chart"></div></div>
+    <div aria-label="Phone with account tickers" class="phone back">
+      <div class="screen screen--list">
+        <div class="list-head"><span>Portfolio</span><span>24h</span></div>
+        <div class="rows" id="rows">
+          <div class="row"><span class="sym">BTC</span><span class="val" data-val="7533.70">$7,533.70</span><span class="pct" data-pct="0.22">+0.22%</span></div>
+          <div class="row"><span class="sym">ETH</span><span class="val" data-val="2754.80">$2,754.80</span><span class="pct" data-pct="-0.18">-0.18%</span></div>
+          <div class="row"><span class="sym">SOL</span><span class="val" data-val="152.34">$152.34</span><span class="pct" data-pct="0.35">+0.35%</span></div>
+          <div class="row"><span class="sym">EURUSD</span><span class="val" data-val="1.0825">1.0825</span><span class="pct" data-pct="0.01">+0.01%</span></div>
+          <div class="row"><span class="sym">AAPL</span><span class="val" data-val="187.22">$187.22</span><span class="pct" data-pct="-0.12">-0.12%</span></div>
+          <div class="row"><span class="sym">TSLA</span><span class="val" data-val="252.71">$252.71</span><span class="pct" data-pct="0.08">+0.08%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal" id="updates">
+  <div class="container">
+    <h2>Update 1.1</h2>
+    <div class="grid-two">
+      <div>
+        <p><strong>What’s new</strong></p>
+        <ul class="benefits">
+          <li>Promo updated: <strong>7 Days Free Trial</strong></li>
+          <li>Pro plan now shows TP &amp; SL levels</li>
+          <li>Seasonal assets removed for cleaner UI</li>
+          <li>Fixed “Exit All” signal bug</li>
+        </ul>
+      </div>
+      <aside class="quote">
+        <p><strong>Tip:</strong> Use the free trial to validate the signals on your watchlist. Combine TP/SL with your risk rules for consistent execution.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="reveal" id="pricing" data-mode="normal">
+<div class="container">
+
+  <style>
+    .pricing-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:10px }
+
+    /* NEW Dual-color Toggle — blob left/right, opposite-side label */
+    .ap-toggle{
+      --accent-off: var(--accent-normal);
+      --accent-on:  var(--accent-trial);
+      position:relative; display:inline-grid; place-items:center;
+      width:188px; height:44px; border-radius:999px; padding:0; cursor:pointer;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg,#0c1d21,#09161a);
+      box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 0 0 2px color-mix(in oklab, var(--accent-off) 55%, transparent);
+      overflow:hidden; -webkit-tap-highlight-color:transparent;
+    }
+    .ap-toggle[aria-pressed="true"]{
+      box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 0 0 2px color-mix(in oklab, var(--accent-on) 55%, transparent);
+    }
+    .ap-toggle:focus-visible{ outline:2px solid color-mix(in oklab, var(--accent-on) 55%, transparent); outline-offset:2px; }
+    .ap-toggle .labels{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between;
+      pointer-events:none; padding:0 16px; font-weight:900; letter-spacing:.2px; font-size:14px; color:#f6fffe;
+      text-shadow:0 1px 2px rgba(0,0,0,.55);
+    }
+    .ap-toggle .label-left,.ap-toggle .label-right{ opacity:.95; transition:opacity .2s ease; white-space:nowrap; }
+    .ap-toggle[aria-pressed="false"] .label-left{ opacity:0; }  /* blob left => hide left label */
+    .ap-toggle[aria-pressed="true"]  .label-right{ opacity:0; } /* blob right => hide right label */
+    .ap-toggle .knob{
+      position:absolute; top:4px; left:4px; width:calc(50% - 8px); height:calc(100% - 8px);
+      border-radius:999px; box-shadow:0 8px 22px rgba(0,0,0,.28), 0 0 0 1px rgba(255,255,255,.08) inset;
+      background:linear-gradient(180deg,var(--accent-off), #00bca5);
+      transform:translateX(0%); transition:transform .25s ease, background .25s ease;
+    }
+    .ap-toggle[aria-pressed="true"] .knob{ transform:translateX(100%); background:linear-gradient(180deg,var(--accent-on), #3186ff); }
+
+    /* Visibility rules for plan groups */
+    #pricing .plans{ display:none; opacity:0; transform:translateY(6px); transition:opacity .25s ease, transform .25s ease }
+    #pricing[data-mode="normal"] .plans-normal{ display:grid; opacity:1; transform:none }
+    #pricing[data-mode="trial"]  .plans-trial{  display:grid; opacity:1; transform:none }
+
+    /* TRIAL accent on Normal/Pro trial cards */
+    #pricing[data-mode="trial"] .plans-trial .card:nth-child(-n+2){
+      border-color: var(--accent-trial);
+      box-shadow: 0 0 0 1px var(--accent-trial-20), 0 25px 60px var(--accent-trial-20), var(--shadow);
+    }
+    #pricing[data-mode="trial"] .plans-trial .card:nth-child(-n+2) .pill.badge{
+      background: rgba(77,163,255,.12);
+      border-color: var(--accent-trial-35);
+      color: #e9f3ff;
+    }
+    #pricing[data-mode="trial"] .plans-trial .card:nth-child(-n+2) .btn.full{
+      background:linear-gradient(180deg,var(--accent-trial),#3186ff);
+      color:#041220; box-shadow:0 0 0 1px var(--accent-trial-20), 0 16px 46px var(--accent-trial-20);
+    }
+    #pricing[data-mode="trial"] .plans-trial .card:nth-child(-n+2) .btn.full:hover{
+      box-shadow:0 0 0 3px var(--accent-trial-20), 0 22px 40px -18px var(--accent-trial-20);
+    }
+  </style>
+
+  <div class="pricing-head">
+    <h2>Pricing &amp; Plans</h2>
+    <button id="trialToggle" class="ap-toggle" type="button" aria-pressed="false" aria-label="Toggle trial view">
+      <span class="labels" aria-hidden="true">
+        <span class="label-left">Trial</span>
+        <span class="label-right">Plans</span>
+      </span>
+      <span class="knob" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- Normal plans -->
+  <div class="grid-3 plans plans-normal">
+    <article class="card">
+      <span class="pill badge">Popular</span>
+      <div class="plan-title">Normal (Starter)</div>
+      <div class="sub">Monthly</div>
+      <div class="price">€19.00 <small>/month</small> <span class="old">€95</span></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Invite-only access</b> to the indicator</div></div>
+        <div class="li"><span class="ok">✓</span><div>BUY &amp; SELL labels directly on the chart</div></div>
+        <div class="li"><span class="ok">✓</span><div>Basic Discord channels</div></div>
+        <div class="li"><span class="no">✕</span><div>No alert notifications</div></div>
+        <div class="li"><span class="no">✕</span><div>No basic materials</div></div>
+        <div class="li"><span class="no">✕</span><div>No performance statistics</div></div>
+        <div class="li"><span class="no">✕</span><div>All elements shown on the chart</div></div>
+        <div class="li"><span class="no">✕</span><div>Advanced Discord channels</div></div>
+        <div class="li"><span class="no">✕</span><div>Video materials</div></div>
+        <div class="li"><span class="no">✕</span><div>Faster support response</div></div>
+        <div class="li"><span class="no">✕</span><div><b>No TP/SL levels</b></div></div>
+      </div>
+      <a class="btn full" href="#" rel="noopener" target="_blank">Get Started →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">Billed monthly. Cancel anytime.</div>
+    </article>
+
+    <article class="card best">
+      <span class="pill badge">Best Value</span>
+      <div class="plan-title">Pro (Advanced)</div>
+      <div class="sub">Quarterly</div>
+      <div class="price">€39.00 <small>/month</small> <span class="old">€195</span></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Everything in Normal</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Alert notifications</b> (Discord)</div></div>
+        <div class="li"><span class="ok">✓</span><div>All elements shown on the chart</div></div>
+        <div class="li"><span class="ok">✓</span><div>Performance statistics</div></div>
+        <div class="li"><span class="ok">✓</span><div>Advanced Discord channels</div></div>
+        <div class="li"><span class="ok">✓</span><div>Video materials</div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Faster support response</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>TP &amp; SL levels</b> on signals</div></div>
+        <div class="li"><span class="no">✕</span><div><b>Priority upgrades</b></div></div>
+        <div class="li"><span class="no">✕</span><div><b>Highest priority support</b></div></div>
+      </div>
+      <a class="btn full" href="#" rel="noopener" target="_blank">Get Started →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">Billed monthly. Cancel anytime.</div>
+    </article>
+
+    <article class="card">
+      <div class="plan-title">Lifetime (VIP)</div>
+      <div class="sub">One-time</div>
+      <div class="price">€499.00 <small>one-time</small></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Everything in Pro</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Lifetime access</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Highest priority support</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Priority upgrades</b></div></div>
+        <div class="li"><span class="ok">✓</span><div>Exclusive materials</div></div>
+      </div>
+      <a class="btn full" href="#">Secure Lifetime Access →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">Installments available: <b>3× €179</b></div>
+    </article>
+  </div>
+
+  <!-- Trial plans -->
+  <div class="grid-3 plans plans-trial">
+    <article class="card">
+      <span class="pill badge">7-Day Trial</span>
+      <div class="plan-title">Normal (Starter)</div>
+      <div class="sub">Try free for 7 days</div>
+      <div class="price">€0 <small>first 7 days</small> <span class="old">then €19/mo</span></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Invite-only access</b></div></div>
+        <div class="li"><span class="ok">✓</span><div>BUY &amp; SELL labels</div></div>
+        <div class="li"><span class="ok">✓</span><div>Basic Discord channels</div></div>
+        <div class="li"><span class="no">✕</span><div>No alert notifications</div></div>
+        <div class="li"><span class="no">✕</span><div>No basic materials</div></div>
+        <div class="li"><span class="no">✕</span><div>No performance statistics</div></div>
+        <div class="li"><span class="no">✕</span><div>All elements shown</div></div>
+        <div class="li"><span class="no">✕</span><div>Advanced Discord</div></div>
+        <div class="li"><span class="no">✕</span><div>Video materials</div></div>
+        <div class="li"><span class="no">✕</span><div>Faster support</div></div>
+        <div class="li"><span class="no">✕</span><div><b>No TP/SL levels</b></div></div>
+      </div>
+      <a class="btn full" href="#" rel="noopener" target="_blank">Start Free Trial →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">€19/mo after trial unless canceled.</div>
+    </article>
+
+    <article class="card best">
+      <span class="pill badge">7-Day Trial</span>
+      <div class="plan-title">Pro (Advanced)</div>
+      <div class="sub">Try free for 7 days</div>
+      <div class="price">€0 <small>first 7 days</small> <span class="old">then €39/mo</span></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Everything in Normal</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Alert notifications</b></div></div>
+        <div class="li"><span class="ok">✓</span><div>All elements shown</div></div>
+        <div class="li"><span class="ok">✓</span><div>Performance statistics</div></div>
+        <div class="li"><span class="ok">✓</span><div>Advanced Discord</div></div>
+        <div class="li"><span class="ok">✓</span><div>Video materials</div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Faster support</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>TP &amp; SL levels</b></div></div>
+        <div class="li"><span class="no">✕</span><div><b>Priority upgrades</b></div></div>
+        <div class="li"><span class="no">✕</span><div><b>Highest priority support</b></div></div>
+      </div>
+      <a class="btn full" href="#" rel="noopener" target="_blank">Start Free Trial →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">€39/mo after trial unless canceled.</div>
+    </article>
+
+    <article class="card">
+      <div class="plan-title">Lifetime (VIP)</div>
+      <div class="sub">One-time</div>
+      <div class="price">€499.00 <small>one-time</small></div>
+      <div class="list">
+        <div class="li"><span class="ok">✓</span><div><b>Everything in Pro</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Lifetime access</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Highest priority support</b></div></div>
+        <div class="li"><span class="ok">✓</span><div><b>Priority upgrades</b></div></div>
+        <div class="li"><span class="ok">✓</span><div>Exclusive materials</div></div>
+      </div>
+      <a class="btn full" href="#">Secure Lifetime Access →</a>
+      <div class="muted" style="font-size:12px;margin-top:8px">Installments available: <b>3× €179</b></div>
+    </article>
+  </div>
+
+  <section aria-label="Feature comparison" class="table">
+    <table>
+      <thead>
+        <tr><th>Feature / Service</th><th>Normal</th><th>Pro</th><th>Lifetime</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Invite-only access</td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>BUY/SELL on the chart</td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>TP/SL levels</td><td><span class="mark nope">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>Alert notifications</td><td><span class="mark nope">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>All elements shown on the chart</td><td><span class="mark nope">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>Performance statistics</td><td><span class="mark nope">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>Video materials</td><td><span class="mark nope">✕</span></td><td><span class="mark yes">✓</span></td><td><span class="mark yes">✓</span></td></tr>
+        <tr><td>Discord access</td><td>Basic</td><td>Advanced</td><td>VIP</td></tr>
+        <tr><td>Support priority</td><td>Standard</td><td>Faster</td><td>Highest / PM</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+</section>
+
+<section class="reveal" id="approach">
+  <div class="container">
+    <h2>Features &amp; Approach</h2>
+    <p>Using advanced digital signal processing techniques and optimizing filter phase shift, we created indicators with low latency, high quality, and high signal probability. Our algorithms have been developed, tested, and carefully validated for 24+ months — including forward testing and live trading.</p>
+    <p>Today, traders use Advance Plus tools to trade with greater confidence.</p>
+  </div>
+</section>
+
+<section class="reveal" id="about">
+  <div class="container" style="display:grid;grid-template-columns:1.1fr .9fr;gap:36px">
+    <div>
+      <h2>About Us</h2>
+      <p>Our team brings extensive trading experience and market knowledge, drawing insights from working with institutional traders, asset management funds, and hedge funds. Through this combination of technical expertise and direct market practice, we’ve developed a scientific approach to financial products — with a sharp focus on technology and innovation.</p>
+    </div>
+    <aside class="quote">
+      <p><strong>“We realized</strong> that many existing strategies and indicators have a high lag between price movement and signal generation. To create an edge, we explored how to optimize the phase shift that filters introduce — <strong>without sacrificing smoothing quality.</strong>”</p>
+    </aside>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="container wrap">
+    <div>
+      <h3>Choose a plan and begin.</h3>
+      <p class="muted" style="margin:6px 0 0">Improve your trading already today. Get high probability trading signals straight to your smartphone or computer.</p>
+    </div>
+    <a class="btn" href="#pricing">View Plans</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container cols">
+    <div>
+      <strong>Advance Plus</strong><br/><span class="muted">Trade with a new level of precision and confidence.</span>
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <a aria-label="YouTube" class="pill" href="https://www.youtube.com/@advancexplus" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.8 3 12 3 12 3s-6.8 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.2 21 12 21 12 21s6.8 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8zM9.75 15.5v-7l6 3.5-6 3.5z"/></svg></a>
+        <a aria-label="Instagram" class="pill" href="https://www.instagram.com/advancexplus?igsh=MWMxMnA5MHV6aHlnNg%3D%3D&utm_source=qr" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1 5 5H7a5 5 0 0 0-5-5V7a5 5 0 0 0 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5A5.5 5.5 0 1 1 6.5 13 5.5 5.5 0 0 1 12 7.5zm0 2A3.5 3.5 0 1 0 15.5 13 3.5 3.5 0 0 0 12 9.5zm6.25-3a1.25 1.25 0 1 1-1.25 1.25A1.25 1.25 0 0 1 18.25 6.5z"/></svg></a>
+        <a aria-label="TikTok" class="pill" href="https://www.tiktok.com/@advancepluss?_r=1&_t=ZS-912VQaCbxKh" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 8.5a7.5 7.5 0 0 1-4.4-1.4v6.2A6.8 6.8 0 1 1 9.1 6.8h2.9v3.1a3.7 3.7 0 1 0 2.8 3.6V2h3a5.5 5.5 0 0 0 3.2 4.6V8.5z"/></svg></a>
+        <a aria-label="Twitter/X" class="pill" href="https://x.com/advancexplus" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.18 2H21l-6.5 7.43L22.5 22h-6.86l-4.8-6.3L4.6 22H2l7-7.99L1.8 2H8.7l4.34 5.75L18.18 2zm-1.2 18h1.6L7.2 4h-1.6l11.37 16z"/></svg></a>
+        <a aria-label="Facebook" class="pill" href="https://www.facebook.com/profile.php?id=61583171002244" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 0 0-11.5 9.9v-7h-2v-3h2V9.6c0-2 1.2-3.1 3-3.1.9 0 1.8.1 1.8.1v2h-1c-1 0-1.3.6-1.3 1.2V12h2.2l-.35 3H13 v7A10 10 0 0 0 22 12z"/></svg></a>
+        <a aria-label="LinkedIn" class="pill" href="https://linkedin.com/in/advance-plus-440781256" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H4zm3.6 14H5V10h2.6v7zM6.3 9.1A1.3 1.3 0 1 1 6.3 6.5a1.3 1.3 0 0 1 0 2.6zM19 17h-2.6v-3.8c0-.9-.3-1.5-1.1-1.5-.6 0-.9.4-1.1.8-.1.1-.1.4-.1.6V17H11V10h2.5v1c.3-.5.9-1.1 2.1-1.1 1.5 0 3.4.9 3.4 3.8V17z"/></svg></a>
+      </div>
+      <div class="footer-emails" style="display:grid;gap:6px;margin-top:10px"><a href="mailto:support@advancexplus.com">support@advancexplus.com</a><a href="mailto:hello@advancexplus.com">hello@advancexplus.com</a></div>
+    </div>
+    <div>
+      <div style="font-weight:700;margin-bottom:10px">Company</div>
+      <div style="display:grid;gap:8px"><a href="#about">About</a><a href="#approach">Features</a></div>
+    </div>
+    <div>
+      <div style="font-weight:700;margin-bottom:10px">Product</div>
+      <div style="display:grid;gap:8px"><a href="#updates">Update 1.1</a><a href="#pricing">Plans</a></div>
+    </div>
+  </div>
+</footer>
+</main>
+
+<script>
+(function() {
+  const burger = document.getElementById('burger');
+  const navlinks = document.getElementById('navlinks');
+  burger?.addEventListener('click', () => {
+    const isOpen = navlinks.classList.toggle('open');
+    burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+
+  (function(){
+    const bar=document.querySelector('.promo-bar'); if(!bar) return;
+    const setH = () => {
+      const h = bar.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--promo-h', h + 'px');
+    };
+    setH(); window.addEventListener('resize', setH, {passive:true});
+    window.addEventListener('orientationchange', setH);
+    if (document.fonts && document.fonts.ready) { document.fonts.ready.then(setH); }
+  })();
+
+  const fields = document.querySelectorAll('.field');
+  const setFilled = (el) => {
+    const input = el.querySelector('input, textarea');
+    el.classList.toggle('filled', !!input?.value);
+    input?.addEventListener('input', () => el.classList.toggle('filled', !!input.value));
+  };
+  fields.forEach(setFilled);
+
+  const attach = document.getElementById('attach');
+  const fileInput = document.getElementById('file');
+  const attachList = document.getElementById('attachList');
+  const maxSize = 5 * 1024 * 1024;
+  const renderList = (files) => {
+    if(!attachList) return;
+    attachList.innerHTML = '';
+    [...files].forEach(f => {
+      const item = document.createElement('div');
+      const tooBig = f.size > maxSize;
+      item.textContent = `${f.name} — ${(f.size/1024).toFixed(0)} KB` + (tooBig ? ' (too big)' : '');
+      item.style.color = tooBig ? '#ffb2b2' : '#cffdef';
+      attachList.appendChild(item);
+    });
+  };
+  fileInput?.addEventListener('change', (e) => renderList(e.target.files));
+  ['dragenter','dragover'].forEach(evt => attach?.addEventListener(evt, e => {e.preventDefault(); attach.classList.add('drag');}));
+  ['dragleave','drop'].forEach(evt => attach?.addEventListener(evt, e => {e.preventDefault(); attach.classList.remove('drag');}));
+  attach?.addEventListener('drop', (e) => {fileInput.files = e.dataTransfer.files; renderList(e.dataTransfer.files);});
+})();
+
+(function(){
+  if (!('IntersectionObserver' in window)) return document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'));
+  const observer = new IntersectionObserver((ents)=>{
+    ents.forEach(ent=>{
+      if(ent.isIntersecting){
+        ent.target.classList.add('visible');
+        observer.unobserve(ent.target);
+      }
+    });
+  }, {root:null, rootMargin:'0px 0px -10% 0px', threshold:0.05});
+  document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+})();
+
+(function(){
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wrapLetters = (el)=>{
+    const txt = el.textContent;
+    el.setAttribute('aria-label', txt);
+    el.classList.add('text-animated');
+    el.textContent = '';
+    [...txt].forEach((ch,i)=>{
+      const span = document.createElement('span');
+      span.className = 'char';
+      span.style.setProperty('--i', i);
+      span.setAttribute('aria-hidden','true');
+      span.textContent = ch;
+      el.appendChild(span);
+    });
+  };
+  if(!reduce){ document.querySelectorAll('.animate-letters').forEach(wrapLetters); }
+})();
+
+(function(){
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rows = document.querySelectorAll('#rows .row'); if (!rows.length) return;
+  const cfg = Array.from(rows).map(r=>{
+    const valEl=r.querySelector('.val'); const pctEl=r.querySelector('.pct');
+    const base=parseFloat(valEl.dataset.val); const basePct=parseFloat(pctEl.dataset.pct);
+    const sym=r.querySelector('.sym').textContent.trim();
+    const isFx=/[A-Z]{3}USD$/.test(sym)||sym.includes('/'); const money=!isFx;
+    return {valEl,pctEl,v:base,p:basePct,isFx,money};
+  });
+  const fmtVal=(n,isFx,money)=>isFx?n.toFixed(4):(money?'$':'')+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtPct=(p)=>(p>=0?'+':'')+p.toFixed(2)+'%';
+  const pulse=(el,pos)=>{el.classList.remove('up','down'); void el.offsetWidth; el.classList.add(pos>=0?'up':'down'); setTimeout(()=>el.classList.remove('up','down'),900);};
+  let timer; const step=()=>{ for(const it of cfg){ const b=it.v; const j=it.isFx?(Math.random()*0.001-0.0005):(Math.random()*(b*0.0012)-(b*0.0006)); const n=Math.max(0.0001,b+j); const d=n-b; it.v=n; const pj=(Math.random()*0.06-0.03); it.p=Math.max(-5,Math.min(5,it.p+pj)); it.valEl.textContent=fmtVal(n,it.isFx,it.money); it.pctEl.textContent=fmtPct(it.p); it.valEl.classList.toggle('up',d>0); it.valEl.classList.toggle('down',d<0); it.pctEl.classList.toggle('up',it.p>=0); it.pctEl.classList.toggle('down',it.p<0); pulse(it.valEl,d); pulse(it.pctEl,it.p);} timer=setTimeout(step,1600); };
+  if (!reduceMotion) step();
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden){ clearTimeout(timer);} else if(!reduceMotion){ step(); }});
+})();
+
+(function(){
+  const nav = document.getElementById('guideMenu'); if(!nav) return;
+  const links = [...nav.querySelectorAll('a')];
+  const sections = links.map(a => document.querySelector(a.getAttribute('href')));
+  const setActive = () => {
+    let idx = 0, off = window.scrollY + 320;
+    sections.forEach((sec, i) => { if (sec && sec.offsetTop <= off) idx = i; });
+    links.forEach((a,i)=>a.classList.toggle('active', i===idx));
+  };
+  document.addEventListener('scroll', setActive, {passive:true}); setActive();
+  links.forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth', block:'start'});
+  }));
+})();
+
+(function(){
+  const guide = document.querySelector('.guide'); if(!guide) return;
+  const root  = document.documentElement;
+  const px = (v)=> parseInt(String(v).replace('px','').trim() || '0', 10);
+  const getVar = (name, fallback)=>{
+    const v = getComputedStyle(root).getPropertyValue(name);
+    return v ? px(v) : fallback;
+  };
+  const GAP=12, TARGETW=230, MINW=160, MAXW=Math.max(getVar('--guide-w', 300), 280), MINLEFT=8;
+  const position = () => {
+    const cont = document.querySelector('.container');
+    const maxw = getVar('--maxw', 1200);
+    const leftEdge = cont ? cont.getBoundingClientRect().left : (window.innerWidth - maxw) / 2;
+    const rightEdge = leftEdge - GAP;
+    const maxWidth  = Math.max(0, rightEdge - MINLEFT);
+    let w = Math.min(MAXW, Math.max(MINW, Math.min(TARGETW, maxWidth)));
+    const left = Math.max(MINLEFT, rightEdge - w);
+    guide.style.display = '';
+    guide.style.width = w + 'px';
+    guide.style.left  = left + 'px';
+    guide.classList.toggle('tight', w < 210);
+    guide.classList.toggle('mini',  w < 180);
+  };
+  ['load','resize'].forEach(ev => window.addEventListener(ev, position, {passive:true}));
+  position();
+})();
+
+(function(){ const apply = () => document.body.classList.toggle('at-top', (window.scrollY || document.documentElement.scrollTop || 0) <= 0);
+  window.addEventListener('load', apply, {once:true}); window.addEventListener('scroll', apply, {passive:true}); })();
+(function(){ const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 2;
+  const apply = () => document.body.classList.toggle('at-top', atTop()); apply();
+  window.addEventListener('load', apply, {once:true}); window.addEventListener('scroll', apply, {passive:true}); })();
+(function(){ const apply = () => document.body.classList.toggle('at-top', (window.scrollY || document.documentElement.scrollTop || 0) <= 2);
+  apply(); window.addEventListener('load', apply, {once:true}); window.addEventListener('scroll', apply, {passive:true}); })();
+
+/* Daily countdown to 12:00 local time */
+(function(){
+  function nextReset(hour, minute){
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(hour, minute, 0, 0);
+    if (now >= target) target.setDate(target.getDate() + 1);
+    return target.getTime();
+  }
+  function start(){
+    const cd = document.getElementById('deal-countdown'); if(!cd) return;
+    const h = cd.querySelector('[data-unit="h"]');
+    const m = cd.querySelector('[data-unit="m"]');
+    const s = cd.querySelector('[data-unit="s"]');
+    if(!h || !m || !s) return;
+
+    const pad = n => String(n).padStart(2,'0');
+    const hour   = parseInt(cd.getAttribute('data-reset-hour') || '12', 10);
+    const minute = parseInt(cd.getAttribute('data-reset-minute') || '0', 10);
+
+    let end = nextReset(hour, minute);
+
+    function tick(){
+      let ms = end - Date.now();
+      if (ms <= 0) { end = nextReset(hour, minute); ms = end - Date.now(); }
+      const total = Math.floor(ms / 1000);
+      const hh = Math.floor(total / 3600);
+      const mm = Math.floor((total % 3600) / 60);
+      const ss = total % 60;
+      h.textContent = pad(hh);
+      m.textContent = pad(mm);
+      s.textContent = pad(ss);
+    }
+    tick();
+    setInterval(tick, 1000);
+    cd.setAttribute('data-ready','1');
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', start, { once:true });
+  }else{ start(); }
+})();
+
+/* Free Trial toggle */
+(function(){
+  const pricing = document.getElementById('pricing'); if(!pricing) return;
+  const btn = document.getElementById('trialToggle'); if(!btn) return;
+  const setMode = (trialOn) => {
+    pricing.setAttribute('data-mode', trialOn ? 'trial' : 'normal');
+    btn.setAttribute('aria-pressed', trialOn ? 'true' : 'false');
+  };
+  btn.addEventListener('click', () => {
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    setMode(on);
+  });
+  try{
+    const q = new URLSearchParams(location.search);
+    if(q.get('trial') === '1'){ setMode(true); }
+  }catch(e){}
+})();
+</script>
+
+<style id="ap-auth-mini-css">
+  .ap-userwrap{position:relative;display:inline-block;margin-left:8px}
+  .ap-userbtn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px;cursor:pointer}
+  .ap-userbtn:hover{background:rgba(255,255,255,.08)}
+  .ap-avatar{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:999px;background:rgba(0,255,194,.08);border:1px solid var(--mint-20)}
+  .ap-userpop{position:absolute;top:calc(100% + 10px);right:0;min-width:260px;background:#0f1d21;border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:12px;display:none;z-index:999}
+  .ap-userpop.open{display:block}
+  .ap-row{display:grid;grid-template-columns:96px 1fr;gap:8px;margin:4px 0}
+  .ap-key{color:#9edbce;font-size:12px}
+  .ap-val{font-weight:700;word-break:break-word}
+  .ap-actions{display:flex;justify-content:flex-end;margin-top:8px}
+  .ap-logout{background:transparent;border:1px solid rgba(255,255,255,.08);color:#eaf3f2;border-radius:10px;padding:8px 10px;cursor:pointer}
+  @media (max-width:980px){
+    .ap-userpop{ position:fixed; right:auto; left:8px; top:72px; max-width:calc(100vw - 16px); width:min(320px, calc(100vw - 16px)); }
+  }
+</style>
+<script id="ap-auth-mini-js">
+(function(){
+  const SVG_USER = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.2 0-8 2.1-8 5v1h16v-1c0-2.9-3.8-5-8-5z"/></svg>';
+  const mqMobile = window.matchMedia('(max-width:980px)');
+  function getUser(){ const b=window.AP_BOOT||{}; return (b.loggedIn&&b.user)?{u:b.user.username||b.user.display_name||'Account',e:b.user.email||'—',c:b.user.country||'—'}:null; }
+  function getLogout(){ const b=window.AP_BOOT||{}; return b.logoutUrl||'/wp-login.php?action=logout'; }
+  function positionPopover(pop, btn){
+    if(!mqMobile.matches){
+      pop.style.position = 'absolute';
+      pop.style.left = '';
+      pop.style.right = '0';
+      pop.style.top = 'calc(100% + 10px)';
+      pop.style.maxWidth = '';
+      pop.style.width = '';
+      return;
+    }
+    const rect = btn.getBoundingClientRect();
+    const vw = window.innerWidth || document.documentElement.clientWidth;
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const pad = 8;
+    const maxW = Math.min(340, vw - pad*2);
+    pop.style.position = 'fixed';
+    pop.style.maxWidth = (vw - pad*2) + 'px';
+    pop.style.width = Math.min(300, vw - pad*2) + 'px';
+    const popW = Math.min(300, vw - pad*2);
+    let left = Math.max(pad, Math.min(rect.left, vw - popW - pad));
+    let top  = Math.max(pad, Math.min(rect.bottom + 8, vh - pad - 10));
+    pop.style.left = left + 'px';
+    pop.style.right = 'auto';
+    pop.style.top = top + 'px';
+  }
+  function mount(){
+    const loginBtn=document.querySelector('a.btn.nav-cta[href*="login"], a.btn.nav-cta[href*="page_id="], a.btn.nav-cta')||null;
+    const parent=loginBtn?.parentElement||document.querySelector('.container.nav')||document.body;
+    let slot=document.getElementById('apUserSlot'); if(!slot){ slot=document.createElement('span'); slot.id='apUserSlot'; slot.className='ap-userwrap'; parent?.insertBefore(slot, loginBtn?.nextSibling||null); }
+    const me=getUser(); slot.innerHTML='';
+    if(me){
+      if(loginBtn) loginBtn.style.display='none';
+      const btn=document.createElement('button'); btn.type='button'; btn.className='ap-userbtn'; btn.id='apUserBtn';
+      btn.setAttribute('aria-haspopup','menu'); btn.setAttribute('aria-expanded','false');
+      btn.innerHTML=`<span class="ap-avatar">${SVG_USER}</span><span>${me.u}</span>`;
+      const pop=document.createElement('div'); pop.className='ap-userpop'; pop.role='menu';
+      const lurl=getLogout();
+      pop.innerHTML=`
+        <div class="ap-row"><div class="ap-key">Username</div><div class="ap-val">${me.u}</div></div>
+        <div class="ap-row"><div class="ap-key">Email</div><div class="ap-val">${me.e}</div></div>
+        <div class="ap-row"><div class="ap-key">Country</div><div class="ap-val">${me.c}</div></div>
+        <div class="ap-actions"><a id="apLogoutLink" class="ap-logout" href="${lurl}">Log out</a></div>
+      `;
+      pop.querySelector('#apLogoutLink')?.addEventListener('click', function(ev){ ev.preventDefault(); window.location.href=lurl; });
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const open = pop.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open?'true':'false');
+        if(open){ positionPopover(pop, btn); }
+      });
+      document.addEventListener('click', (e)=>{ if(!slot.contains(e.target)){ pop.classList.remove('open'); btn.setAttribute('aria-expanded','false'); } });
+      document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ pop.classList.remove('open'); btn.setAttribute('aria-expanded','false'); } });
+      window.addEventListener('resize', ()=>{ if(pop.classList.contains('open')) positionPopover(pop, btn); }, {passive:true});
+      window.addEventListener('orientationchange', ()=>{ if(pop.classList.contains('open')) setTimeout(()=>positionPopover(pop, btn), 50); });
+      slot.appendChild(btn); slot.appendChild(pop);
+    } else { if(loginBtn) loginBtn.style.display=''; }
+  }
+  function init(){ try{ mount(); }catch(e){} }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) init(); });
+})();
+</script>
